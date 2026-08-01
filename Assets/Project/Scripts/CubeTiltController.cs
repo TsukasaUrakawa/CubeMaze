@@ -22,7 +22,8 @@ public class CubeTiltController : MonoBehaviour
 
         Quaternion targetRotation = Quaternion.Euler(targetX, 0f, targetZ);
 
-        transform.localRotation = Quaternion.Lerp(
+        // Œ»İ‚Ì‰ñ“]Šp‚©‚ç–Ú•W‚Ì‰ñ“]Šp‚ÉŒü‚©‚Á‚Äˆê’è‘¬“x‚Å‰ñ“]‚³‚¹‚é
+        transform.localRotation = Quaternion.RotateTowards(
             transform.localRotation,
             targetRotation,
             rotationSpeed * Time.deltaTime
