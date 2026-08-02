@@ -62,15 +62,15 @@ public class CubeTiltController : MonoBehaviour
         //　使用しているデバイスのIMU(Inertial Measurement Unit)情報を保存
         IMU_STATE imu = JSL.JslGetIMUState(deviceId);
 
-        // Pitch と Roll を計算( Pitch→前後、 Roll→左右)
+        // 加速度センサーの値からPitch(前後)とRoll(左右)の傾斜角を計算
         float pitch = Mathf.Atan2(imu.accelZ, imu.accelY) * Mathf.Rad2Deg;
         float roll = Mathf.Atan2(-imu.accelX, imu.accelY) * Mathf.Rad2Deg;
 
-        // フィルタ
+        // pitch と roll の値をフィルタリングして滑らかにする
         filteredPitch = Mathf.Lerp(filteredPitch, pitch, filterStrength);
         filteredRoll = Mathf.Lerp(filteredRoll, roll, filterStrength);
 
-        // 最大角度
+        // 最大傾斜角と最小傾斜角内に制限する
         float targetX = Mathf.Clamp(filteredPitch, -maxTiltAngle, maxTiltAngle);
         float targetZ = Mathf.Clamp(-filteredRoll, -maxTiltAngle, maxTiltAngle);
 
@@ -84,7 +84,7 @@ public class CubeTiltController : MonoBehaviour
         // 目標の回転角をQuaternionに変換
         Quaternion targetRotation = Quaternion.Euler(targetX, 0f, targetZ);
 
-        // 現在の回転角から目標の回転角に向かって一定速度で回転させる
+        // 現在の回転角から目標の回転角に向かって一定速度で回転する
         transform.localRotation = Quaternion.RotateTowards(
             transform.localRotation,
             targetRotation,
