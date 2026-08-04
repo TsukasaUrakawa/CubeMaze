@@ -15,8 +15,14 @@ public class CubeTiltController : MonoBehaviour
     private float filteredPitch;
     private float filteredRoll;
 
+    private Rigidbody rb;
+
+    private Quaternion targetRotation;
+
     private void Start()
     {
+        rb = GetComponent<Rigidbody>();
+
         InitializeDevice();
     }
 
@@ -28,6 +34,11 @@ public class CubeTiltController : MonoBehaviour
         }
         
         UpdateTilt();
+    }
+
+    private void FixedUpdate()
+    {
+        RotateCube();
     }
 
     /// <summary>
@@ -82,13 +93,18 @@ public class CubeTiltController : MonoBehaviour
             targetZ = 0f;
 
         // –Ú•W‚Ì‰ñ“]Šp‚ğQuaternion‚É•ÏŠ·
-        Quaternion targetRotation = Quaternion.Euler(targetX, 0f, targetZ);
+        targetRotation = Quaternion.Euler(targetX, 0f, targetZ);
+    }
 
+    private void RotateCube()
+    {
         // Œ»İ‚Ì‰ñ“]Šp‚©‚ç–Ú•W‚Ì‰ñ“]Šp‚ÉŒü‚©‚Á‚Äˆê’è‘¬“x‚Å‰ñ“]‚·‚é
-        transform.localRotation = Quaternion.RotateTowards(
-            transform.localRotation,
+        Quaternion nextRotation = Quaternion.RotateTowards(
+            rb.rotation,
             targetRotation,
-            rotationSpeed * Time.deltaTime
+            rotationSpeed * Time.fixedDeltaTime
         );
+
+        rb.MoveRotation(nextRotation);
     }
 }
