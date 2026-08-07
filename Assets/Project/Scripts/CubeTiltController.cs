@@ -17,7 +17,7 @@ public class CubeTiltController : MonoBehaviour
 
     private Rigidbody rb;
 
-    private Quaternion targetRotation;
+    private Quaternion targetRotation = Quaternion.identity;
 
     private void Start()
     {
@@ -98,11 +98,13 @@ public class CubeTiltController : MonoBehaviour
 
     private void RotateCube()
     {
-        // Œ»İ‚Ì‰ñ“]Šp‚©‚ç–Ú•W‚Ì‰ñ“]Šp‚ÉŒü‚©‚Á‚Äˆê’è‘¬“x‚Å‰ñ“]‚·‚é
+        float angleDifference = Quaternion.Angle(rb.rotation, targetRotation);
+        float speed = angleDifference * rotationSpeed;
+
         Quaternion nextRotation = Quaternion.RotateTowards(
             rb.rotation,
             targetRotation,
-            rotationSpeed * Time.fixedDeltaTime
+            speed * Time.fixedDeltaTime
         );
 
         rb.MoveRotation(nextRotation);
