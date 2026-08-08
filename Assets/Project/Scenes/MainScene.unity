@@ -2305,7 +2305,7 @@ MonoBehaviour:
   rotationSpeed: 1
   filterStrength: 0.02
   deadZone: 2
-  maxRotationSpeed: 5
+  maxRotationSpeed: 20
 --- !u!4 &1183905498
 Transform:
   m_ObjectHideFlags: 0
