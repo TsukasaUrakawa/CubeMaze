@@ -8,6 +8,7 @@ public class CubeTiltController : MonoBehaviour
     [SerializeField] private float rotationSpeed = 5f; // 回転速度
     [SerializeField] private float filterStrength = 0.02f; // フィルタの強さ
     [SerializeField] private float deadZone = 2f; // デッドゾーンの範囲
+    [SerializeField] private float maxRotationSpeed = 45f; // 最大回転速度
 
     private const int MaxDeviceCount = 16; // 最大接続デバイス数
     private int deviceId = -1;
@@ -17,8 +18,11 @@ public class CubeTiltController : MonoBehaviour
 
     private Quaternion targetRotation = Quaternion.identity;
 
+    private Rigidbody rb;
+
     private void Start()
     {
+        rb = GetComponent<Rigidbody>();
 
         InitializeDevice();
     }
@@ -95,12 +99,17 @@ public class CubeTiltController : MonoBehaviour
 
     private void RotateCube()
     {
-        float angleDifference = Quaternion.Angle(transform.localRotation, targetRotation);
+        float angleDifference = Quaternion.Angle(rb.rotation, targetRotation);
         float speed = angleDifference * rotationSpeed;
 
-        transform.localRotation = Quaternion.RotateTowards(
-            transform.localRotation,
+        speed = Mathf.Min(speed, maxRotationSpeed);
+
+        Quaternion nextRotation = Quaternion.RotateTowards(
+            rb.rotation,
             targetRotation,
-            speed * Time.fixedDeltaTime);
+            speed * Time.fixedDeltaTime
+        );
+
+        rb.MoveRotation(nextRotation);
     }
 }
