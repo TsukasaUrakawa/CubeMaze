@@ -37,109 +37,49 @@ public class FloorMeshGenerator
         float halfFloorWidth = _floorWidth * 0.5f;
         float splineLength = _courseSpline.CalculateLength();
 
-        int topStartIndex = vertices.Count;
+        int topStartIndex = vertices.Count; //上面用の頂点が始まる番号
 
         for (int i = 0; i <= _resolution; i++)
         {
             float t = (float)i / _resolution;
 
-            //Spline上の位置
+            // Spline上の位置
             Vector3 position = _courseSpline.EvaluatePosition(t);
 
-            //Splineの進行方向
+            // Splineの進行方向
             Vector3 tangent = _courseSpline.EvaluateTangent(t);
             tangent.Normalize();
 
-            //Splineの上方向
+            // Splineの上方向
             Vector3 up = _courseSpline.EvaluateUpVector(t);
             up.Normalize();
 
-            //Splineの右方向
+            // Splineの右方向
             Vector3 right = Vector3.Cross(up, tangent).normalized;
 
-            //床上面の左右
+            // 床上面の左右
             Vector3 leftTop = position - right * halfFloorWidth;
             Vector3 rightTop = position + right * halfFloorWidth;
 
-            //ローカル座標に変換
+            // ローカル座標に変換
             leftTop = _floorMeshFilter.transform.InverseTransformPoint(leftTop);
             rightTop = _floorMeshFilter.transform.InverseTransformPoint(rightTop);
+
+            // 頂点追加
+            vertices.Add(leftTop);
+            vertices.Add(rightTop);
+
+            // UV
+            float v = t * splineLength;
+
+            uvs.Add(new Vector2(0.0f, v));
+            uvs.Add(new Vector2(_floorWidth, v));
         }
 
+        //上面の三角形を作る
         for (int i = 0; i < _resolution; i++)
         {
-            int index = i * 4;
 
-            // 上面の四角形
-            triangles.Add(index);
-            triangles.Add(index + 4);
-            triangles.Add(index + 1);
-
-            triangles.Add(index + 1);
-            triangles.Add(index + 4);
-            triangles.Add(index + 5);
-
-            // 下面の四角形
-            triangles.Add(index + 2);
-            triangles.Add(index + 3);
-            triangles.Add(index + 6);
-
-            triangles.Add(index + 3);
-            triangles.Add(index + 7);
-            triangles.Add(index + 6);
-
-            // 側面の四角形（左側）
-            triangles.Add(index);
-            triangles.Add(index + 2);
-            triangles.Add(index + 4);
-
-            triangles.Add(index + 2);
-            triangles.Add(index + 6);
-            triangles.Add(index + 4);
-
-            // 側面の四角形（右側）
-            triangles.Add(index + 1);
-            triangles.Add(index + 5);
-            triangles.Add(index + 3);
-
-            triangles.Add(index + 3);
-            triangles.Add(index + 5);
-            triangles.Add(index + 7);
         }
-
-        // 側面の四角形（前側）
-        triangles.Add(0);
-        triangles.Add(1);
-        triangles.Add(2);
-
-        triangles.Add(1);
-        triangles.Add(3);
-        triangles.Add(2);
-
-        // 側面の四角形（後側）
-        int lastIndex = _resolution * 4;
-
-        triangles.Add(lastIndex);
-        triangles.Add(lastIndex + 2);
-        triangles.Add(lastIndex + 1);
-
-        triangles.Add(lastIndex + 1);
-        triangles.Add(lastIndex + 2);
-        triangles.Add(lastIndex + 3);
-
-        Mesh mesh = new Mesh();
-        mesh.name = "GeneratedFloor";
-
-        mesh.SetVertices(vertices);
-        mesh.SetTriangles(triangles, 0);
-        mesh.SetUVs(0, uvs);
-
-        mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
-
-        _floorMeshFilter.sharedMesh = mesh;
-
-        _floorMeshCollider.sharedMesh = null;
-        _floorMeshCollider.sharedMesh = mesh;
     }
 }
