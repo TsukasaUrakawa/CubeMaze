@@ -32,43 +32,38 @@ public class FloorMeshGenerator
 
         List<Vector3> vertices = new();
         List<int> triangles = new();
+        List<Vector2> uvs = new();
 
         float halfFloorWidth = _floorWidth * 0.5f;
+        float splineLength = _courseSpline.CalculateLength();
+
+        int topStartIndex = vertices.Count;
 
         for (int i = 0; i <= _resolution; i++)
         {
             float t = (float)i / _resolution;
 
-            // Splineの座標
+            //Spline上の位置
             Vector3 position = _courseSpline.EvaluatePosition(t);
 
-            // Splineの進行方向
+            //Splineの進行方向
             Vector3 tangent = _courseSpline.EvaluateTangent(t);
             tangent.Normalize();
 
-            // Splineの上方向
+            //Splineの上方向
             Vector3 up = _courseSpline.EvaluateUpVector(t);
             up.Normalize();
 
-            // Splineの進行方向から見て右方向
+            //Splineの右方向
             Vector3 right = Vector3.Cross(up, tangent).normalized;
 
+            //床上面の左右
             Vector3 leftTop = position - right * halfFloorWidth;
             Vector3 rightTop = position + right * halfFloorWidth;
 
-            Vector3 leftBottom = leftTop - up * _floorThickness;
-            Vector3 rightBottom = rightTop - up * _floorThickness;
-
-            // ワールド座標からローカル座標に変換
+            //ローカル座標に変換
             leftTop = _floorMeshFilter.transform.InverseTransformPoint(leftTop);
             rightTop = _floorMeshFilter.transform.InverseTransformPoint(rightTop);
-            leftBottom = _floorMeshFilter.transform.InverseTransformPoint(leftBottom);
-            rightBottom = _floorMeshFilter.transform.InverseTransformPoint(rightBottom);
-
-            vertices.Add(leftTop);
-            vertices.Add(rightTop);
-            vertices.Add(leftBottom);
-            vertices.Add(rightBottom);
         }
 
         for (int i = 0; i < _resolution; i++)
@@ -137,6 +132,7 @@ public class FloorMeshGenerator
 
         mesh.SetVertices(vertices);
         mesh.SetTriangles(triangles, 0);
+        mesh.SetUVs(0, uvs);
 
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
