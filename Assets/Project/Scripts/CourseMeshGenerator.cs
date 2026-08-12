@@ -24,14 +24,17 @@ public class CourseMeshGenerator : MonoBehaviour
     [SerializeField] private float _wallThickness = 0.5f;
 
     //SplineÇÃï™äÑêîÇéwíËÇ∑ÇÈïœêî
-    [SerializeField, Min(1)] private int _resolution = 20;
-    
+    [SerializeField, Min(1)] private int _segmentPerUnit = 4;
+
     [ContextMenu("Generate Course")]
     public void GenerateCourse()
     {
-        FloorMeshGenerator floorGenerator = new FloorMeshGenerator(_courseSpline, _floorMeshFilter, _floorMeshCollider, _floorWidth, _floorThickness, _resolution);
+        float splineLength = _courseSpline.CalculateLength();
+
+        int resolution = Mathf.Max(1, Mathf.CeilToInt(splineLength * _segmentPerUnit));
+        FloorMeshGenerator floorGenerator = new FloorMeshGenerator(_courseSpline, _floorMeshFilter, _floorMeshCollider, _floorWidth, _floorThickness, resolution);
         
-        WallMeshGenerator wallGenerator = new WallMeshGenerator(_courseSpline, _leftWallMeshFilter, _rightWallMeshFilter, _leftWallMeshCollider, _rightWallMeshCollider, _floorWidth, _wallHeight, _wallThickness, _resolution);
+        WallMeshGenerator wallGenerator = new WallMeshGenerator(_courseSpline, _leftWallMeshFilter, _rightWallMeshFilter, _leftWallMeshCollider, _rightWallMeshCollider, _floorWidth, _wallHeight, _wallThickness, resolution);
 
         floorGenerator.Generate();
         wallGenerator.Generate();
