@@ -2055,7 +2055,7 @@ MonoBehaviour:
   _rotationSpeed: 5
   _filterStrength: 0.02
   _deadZone: 2
-  _maxRotationSpeed: 12
+  _maxRotationSpeed: 10
   _rotationAcceleration: 20
 --- !u!4 &1183905498
 Transform:
