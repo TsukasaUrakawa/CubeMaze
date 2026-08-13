@@ -1,35 +1,43 @@
+using TMPro;
 using UnityEngine;
 using static JSL;
 
 public class CubeTiltController : MonoBehaviour
 {
     [Header("回転設定")]
-    [SerializeField] private float maxTiltAngle = 20f; // 最大傾斜角
-    [SerializeField] private float rotationSpeed = 5f; // 回転速度
-    [SerializeField] private float filterStrength = 0.02f; // フィルタの強さ
-    [SerializeField] private float deadZone = 2f; // デッドゾーンの範囲
-    [SerializeField] private float maxRotationSpeed = 45f; // 最大回転速度
+    [SerializeField] private float _maxTiltAngle = 20f; // 最大傾斜角
+    [SerializeField] private float _rotationSpeed = 5f; // 回転速度
+    [SerializeField] private float _filterStrength = 0.02f; // フィルタの強さ
+    [SerializeField] private float _deadZone = 2f; // デッドゾーンの範囲
+    [SerializeField] private float _maxRotationSpeed = 15f; // 最大回転速度
 
-    private const int MaxDeviceCount = 16; // 最大接続デバイス数
-    private int deviceId = -1;
+    [SerializeField] private float _rotationAcceleration = 20f;
+    private float _currentRotationSpeed;
 
-    private float filteredPitch;
-    private float filteredRoll;
+    private const int _maxDeviceCount = 16; // 最大接続デバイス数
+    private int _deviceId = -1;
 
-    private Quaternion targetRotation = Quaternion.identity;
+    private float _filteredPitch;
+    private float _filteredRoll;
 
-    private Rigidbody rb;
+    private Quaternion _baseRotation = Quaternion.identity;
+    private Quaternion _targetRotation = Quaternion.identity;
+
+    private Rigidbody _rb;
 
     private void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        _rb = GetComponent<Rigidbody>();
+
+        _baseRotation = _rb.rotation;
+        _targetRotation = _baseRotation;
 
         InitializeDevice();
     }
 
     private void Update()
     {
-        if (deviceId < 0)
+        if (_deviceId < 0)
         {
             return;
         }
@@ -51,7 +59,7 @@ public class CubeTiltController : MonoBehaviour
         JSL.JslConnectDevices();
 
         // デバイスIDを取得
-        int[] handles = new int[MaxDeviceCount];
+        int[] handles = new int[_maxDeviceCount];
         // 取得したデバイス数を保存
         int count = JSL.JslGetConnectedDeviceHandles(handles, handles.Length);
 
@@ -64,52 +72,60 @@ public class CubeTiltController : MonoBehaviour
         }
 
         // 最初のデバイスを使用
-        deviceId = handles[0];
+        _deviceId = handles[0];
 
-        Debug.Log($"使用するデバイスID : {deviceId}");
+        Debug.Log($"使用するデバイスID : {_deviceId}");
     }
 
     private void UpdateTilt()
     {
         //　使用しているデバイスのIMU(Inertial Measurement Unit)情報を保存
-        IMU_STATE imu = JSL.JslGetIMUState(deviceId);
+        IMU_STATE imu = JSL.JslGetIMUState(_deviceId);
 
         // 加速度センサーの値からPitch(前後)とRoll(左右)の傾斜角を計算
         float pitch = Mathf.Atan2(imu.accelZ, imu.accelY) * Mathf.Rad2Deg;
         float roll = Mathf.Atan2(-imu.accelX, imu.accelY) * Mathf.Rad2Deg;
 
         // pitch と roll の値をフィルタリングして滑らかにする
-        filteredPitch = Mathf.Lerp(filteredPitch, pitch, filterStrength);
-        filteredRoll = Mathf.Lerp(filteredRoll, roll, filterStrength);
+        _filteredPitch = Mathf.Lerp(_filteredPitch, pitch, _filterStrength);
+        _filteredRoll = Mathf.Lerp(_filteredRoll, roll, _filterStrength);
 
         // 最大傾斜角と最小傾斜角内に制限する
-        float targetX = Mathf.Clamp(filteredPitch, -maxTiltAngle, maxTiltAngle);
-        float targetZ = Mathf.Clamp(-filteredRoll, -maxTiltAngle, maxTiltAngle);
+        float targetX = Mathf.Clamp(_filteredPitch, -_maxTiltAngle, _maxTiltAngle);
+        float targetZ = Mathf.Clamp(-_filteredRoll, -_maxTiltAngle, _maxTiltAngle);
 
         // デッドゾーンの適用
-        if (Mathf.Abs(targetX) < deadZone)
+        if (Mathf.Abs(targetX) < _deadZone)
             targetX = 0f;
 
-        if (Mathf.Abs(targetZ) < deadZone)
+        if (Mathf.Abs(targetZ) < _deadZone)
             targetZ = 0f;
 
         // 目標の回転角をQuaternionに変換
-        targetRotation = Quaternion.Euler(targetX, 0f, targetZ);
+        Quaternion tiltRotation = Quaternion.Euler(targetX, 0f, targetZ);
+
+        _targetRotation = _baseRotation * tiltRotation;
     }
 
     private void RotateCube()
     {
-        float angleDifference = Quaternion.Angle(rb.rotation, targetRotation);
-        float speed = angleDifference * rotationSpeed;
+        float angleDifference = Quaternion.Angle(_rb.rotation, _targetRotation);
+        float targetSpeed = angleDifference * _rotationSpeed;
 
-        speed = Mathf.Min(speed, maxRotationSpeed);
+        targetSpeed = Mathf.Min(targetSpeed, _maxRotationSpeed);
+
+        _currentRotationSpeed = Mathf.MoveTowards(
+            _currentRotationSpeed,
+            targetSpeed,
+            _rotationAcceleration * Time.fixedDeltaTime
+            );
 
         Quaternion nextRotation = Quaternion.RotateTowards(
-            rb.rotation,
-            targetRotation,
-            speed * Time.fixedDeltaTime
+            _rb.rotation,
+            _targetRotation,
+            _currentRotationSpeed * Time.fixedDeltaTime
         );
 
-        rb.MoveRotation(nextRotation);
+        _rb.MoveRotation(nextRotation);
     }
 }
