@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.Splines;
 
 /// <summary>
-/// エディタ上でSplineが変更された際に、CourseMeshGeneratorのGenerateFloorメソッドを自動的に呼び出すクラス
+/// エディタ上でSplineが変更された際に、CourseMeshGeneratorのGenerateCourseメソッドを自動的に呼び出すクラス
 /// </summary>
 [InitializeOnLoad]
 public static class CourseMeshGeneratorEditor

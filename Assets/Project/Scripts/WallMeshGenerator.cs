@@ -52,7 +52,7 @@ public class WallMeshGenerator
             return;
         }
 
-        //左壁
+        // 左壁
         List<Vector3> leftInnerVertices = new();
         List<Vector3> leftOuterVertices = new();
         List<Vector3> leftTopVertices = new();
@@ -61,7 +61,11 @@ public class WallMeshGenerator
         List<Vector2> leftOuterUvs = new();
         List<Vector2> leftTopUvs = new();
 
-        //右壁
+        List<Vector3> leftVertices = new();
+        List<int> leftTriangles = new();
+        List<Vector2> leftUvs = new();
+
+        // 右壁
         List<Vector3> rightInnerVertices = new();
         List<Vector3> rightOuterVertices = new();
         List<Vector3> rightTopVertices = new();
@@ -70,10 +74,6 @@ public class WallMeshGenerator
         List<Vector2> rightOuterUvs = new();
         List<Vector2> rightTopUvs = new();
 
-        List<Vector3> leftVertices = new();
-        List<int> leftTriangles = new();
-        List<Vector2> leftUvs = new();
-
         List<Vector3> rightVertices = new();
         List<int> rightTriangles = new();
         List<Vector2> rightUvs = new();
@@ -81,25 +81,29 @@ public class WallMeshGenerator
         float halfFloorWidth = _floorWidth * 0.5f;
         float splineLength = _courseSpline.CalculateLength();
 
+        // 前面
         Vector3 leftFrontOuterBottom = Vector3.zero;
         Vector3 leftFrontInnerBottom = Vector3.zero;
         Vector3 leftFrontOuterTop = Vector3.zero;
         Vector3 leftFrontInnerTop = Vector3.zero;
-
-        Vector3 leftBackOuterBottom = Vector3.zero;
-        Vector3 leftBackInnerBottom = Vector3.zero;
-        Vector3 leftBackOuterTop = Vector3.zero;
-        Vector3 leftBackInnerTop = Vector3.zero;
 
         Vector3 rightFrontOuterBottom = Vector3.zero;
         Vector3 rightFrontInnerBottom = Vector3.zero;
         Vector3 rightFrontOuterTop = Vector3.zero;
         Vector3 rightFrontInnerTop = Vector3.zero;
 
+        // 後面
+        Vector3 leftBackOuterBottom = Vector3.zero;
+        Vector3 leftBackInnerBottom = Vector3.zero;
+        Vector3 leftBackOuterTop = Vector3.zero;
+        Vector3 leftBackInnerTop = Vector3.zero;
+
         Vector3 rightBackOuterBottom = Vector3.zero;
         Vector3 rightBackInnerBottom = Vector3.zero;
         Vector3 rightBackOuterTop = Vector3.zero;
         Vector3 rightBackInnerTop = Vector3.zero;
+
+
 
         for (int i = 0; i <= _resolution; i++)
         {
@@ -115,19 +119,19 @@ public class WallMeshGenerator
 
             Vector3 right = Vector3.Cross(up, tangent).normalized;
 
-            //左壁
+            // 左壁
             Vector3 leftOuterBottom = position - right * halfFloorWidth;
             Vector3 leftInnerBottom = leftOuterBottom + right * _wallThickness;
             Vector3 leftOuterTop = leftOuterBottom + up * _wallHeight;
             Vector3 leftInnerTop = leftInnerBottom + up * _wallHeight;
 
-            //右壁
+            // 右壁
             Vector3 rightOuterBottom = position + right * halfFloorWidth;
             Vector3 rightInnerBottom = rightOuterBottom - right * _wallThickness;
             Vector3 rightOuterTop = rightOuterBottom + up * _wallHeight;
             Vector3 rightInnerTop = rightInnerBottom + up * _wallHeight;
 
-            //ローカル座標に変換
+            // MeshFilterを基準にしたローカル座標に変換
             leftOuterBottom = _leftWallMeshFilter.transform.InverseTransformPoint(leftOuterBottom);
             leftInnerBottom = _leftWallMeshFilter.transform.InverseTransformPoint(leftInnerBottom);
             leftOuterTop = _leftWallMeshFilter.transform.InverseTransformPoint(leftOuterTop);

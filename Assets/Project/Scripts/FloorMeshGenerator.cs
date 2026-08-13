@@ -30,14 +30,16 @@ public class FloorMeshGenerator
             return;
         }
 
+        // 各部分における頂点のList
         List<Vector3> topVertices = new();
         List<Vector3> bottomVertices = new();
         List<Vector3> leftSideVertices = new();
         List<Vector3> rightSideVertices = new();
         List<Vector3> vertices = new();
 
-        List<int> triangles = new();
+        List<int> triangles = new(); // 面を作るのに必要な三角形
 
+        // 各部分におけるUVのList
         List<Vector2> topUvs = new();
         List<Vector2> bottomUvs = new();
         List<Vector2> leftSideUvs = new();
@@ -47,11 +49,13 @@ public class FloorMeshGenerator
         float halfFloorWidth = _floorWidth * 0.5f;
         float splineLength = _courseSpline.CalculateLength();
 
+        // 前面用の頂点
         Vector3 frontLeftTop = Vector3.zero;
         Vector3 frontRightTop = Vector3.zero;
         Vector3 frontLeftBottom = Vector3.zero;
         Vector3 frontRightBottom = Vector3.zero;
 
+        // 後面用の頂点
         Vector3 backLeftTop = Vector3.zero;
         Vector3 backRightTop = Vector3.zero;
         Vector3 backLeftBottom = Vector3.zero;
@@ -72,7 +76,7 @@ public class FloorMeshGenerator
             Vector3 up = _courseSpline.EvaluateUpVector(t);
             up.Normalize();
 
-            // Splineの右方向
+            // Splineの右方向(進行方向から見て右)
             Vector3 right = Vector3.Cross(up, tangent).normalized;
 
             // 床上面の左右
@@ -83,12 +87,13 @@ public class FloorMeshGenerator
             Vector3 leftBottom = leftTop - up * _floorThickness;
             Vector3 rightBottom = rightTop - up * _floorThickness;
 
-            // ローカル座標に変換
+            // MeshFilter基準のローカル座標に変換
             leftTop = _floorMeshFilter.transform.InverseTransformPoint(leftTop);
             rightTop = _floorMeshFilter.transform.InverseTransformPoint(rightTop);
             leftBottom = _floorMeshFilter.transform.InverseTransformPoint(leftBottom);
             rightBottom = _floorMeshFilter.transform.InverseTransformPoint(rightBottom);
 
+            // 前面の頂点
             if (i == 0)
             {
                 frontLeftTop = leftTop;
@@ -97,6 +102,7 @@ public class FloorMeshGenerator
                 frontRightBottom = rightBottom;
             }
 
+            // 後面の頂点
             if (i == _resolution)
             {
                 backLeftTop = leftTop;
@@ -105,7 +111,7 @@ public class FloorMeshGenerator
                 backRightBottom = rightBottom;
             }
 
-            // 頂点追加
+            // 各面専用の頂点Listに追加
             topVertices.Add(leftTop);
             topVertices.Add(rightTop);
 
@@ -134,6 +140,7 @@ public class FloorMeshGenerator
             rightSideUvs.Add(new Vector2(v, 0.0f));
         }
 
+        // 各部分のListに保存した頂点、UVをそれぞれ1つのListに保存
         int topStartIndex = vertices.Count;
         vertices.AddRange(topVertices);
         uvs.AddRange(topUvs);
@@ -150,27 +157,21 @@ public class FloorMeshGenerator
         vertices.AddRange(rightSideVertices);
         uvs.AddRange(rightSideUvs);
 
-        // 前面
         int frontStartIndex = vertices.Count;
-
         vertices.Add(frontLeftTop);
         vertices.Add(frontRightTop);
         vertices.Add(frontLeftBottom);
         vertices.Add(frontRightBottom);
-
         uvs.Add(new Vector2(0.0f, _floorThickness));
         uvs.Add(new Vector2(_floorWidth, _floorThickness));
         uvs.Add(new Vector2(0.0f, 0.0f));
         uvs.Add(new Vector2(_floorWidth, 0.0f));
 
-        // 後面
         int backStartIndex = vertices.Count;
-
         vertices.Add(backLeftTop);
         vertices.Add(backRightTop);
         vertices.Add(backLeftBottom);
         vertices.Add(backRightBottom);
-
         uvs.Add(new Vector2(0.0f, _floorThickness));
         uvs.Add(new Vector2(_floorWidth, _floorThickness));
         uvs.Add(new Vector2(0.0f, 0.0f));
