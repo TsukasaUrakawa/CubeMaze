@@ -52,13 +52,54 @@ public class WallMeshGenerator
             return;
         }
 
+        //左壁
+        List<Vector3> leftInnerVertices = new();
+        List<Vector3> leftOuterVertices = new();
+        List<Vector3> leftTopVertices = new();
+
+        List<Vector2> leftInnerUvs = new();
+        List<Vector2> leftOuterUvs = new();
+        List<Vector2> leftTopUvs = new();
+
+        //右壁
+        List<Vector3> rightInnerVertices = new();
+        List<Vector3> rightOuterVertices = new();
+        List<Vector3> rightTopVertices = new();
+
+        List<Vector2> rightInnerUvs = new();
+        List<Vector2> rightOuterUvs = new();
+        List<Vector2> rightTopUvs = new();
+
         List<Vector3> leftVertices = new();
         List<int> leftTriangles = new();
+        List<Vector2> leftUvs = new();
 
         List<Vector3> rightVertices = new();
         List<int> rightTriangles = new();
+        List<Vector2> rightUvs = new();
 
         float halfFloorWidth = _floorWidth * 0.5f;
+        float splineLength = _courseSpline.CalculateLength();
+
+        Vector3 leftFrontOuterBottom = Vector3.zero;
+        Vector3 leftFrontInnerBottom = Vector3.zero;
+        Vector3 leftFrontOuterTop = Vector3.zero;
+        Vector3 leftFrontInnerTop = Vector3.zero;
+
+        Vector3 leftBackOuterBottom = Vector3.zero;
+        Vector3 leftBackInnerBottom = Vector3.zero;
+        Vector3 leftBackOuterTop = Vector3.zero;
+        Vector3 leftBackInnerTop = Vector3.zero;
+
+        Vector3 rightFrontOuterBottom = Vector3.zero;
+        Vector3 rightFrontInnerBottom = Vector3.zero;
+        Vector3 rightFrontOuterTop = Vector3.zero;
+        Vector3 rightFrontInnerTop = Vector3.zero;
+
+        Vector3 rightBackOuterBottom = Vector3.zero;
+        Vector3 rightBackInnerBottom = Vector3.zero;
+        Vector3 rightBackOuterTop = Vector3.zero;
+        Vector3 rightBackInnerTop = Vector3.zero;
 
         for (int i = 0; i <= _resolution; i++)
         {
@@ -86,6 +127,7 @@ public class WallMeshGenerator
             Vector3 rightOuterTop = rightOuterBottom + up * _wallHeight;
             Vector3 rightInnerTop = rightInnerBottom + up * _wallHeight;
 
+            //ローカル座標に変換
             leftOuterBottom = _leftWallMeshFilter.transform.InverseTransformPoint(leftOuterBottom);
             leftInnerBottom = _leftWallMeshFilter.transform.InverseTransformPoint(leftInnerBottom);
             leftOuterTop = _leftWallMeshFilter.transform.InverseTransformPoint(leftOuterTop);
@@ -96,119 +138,272 @@ public class WallMeshGenerator
             rightOuterTop = _rightWallMeshFilter.transform.InverseTransformPoint(rightOuterTop);
             rightInnerTop = _rightWallMeshFilter.transform.InverseTransformPoint(rightInnerTop);
 
-            leftVertices.Add(leftOuterBottom);
-            leftVertices.Add(leftInnerBottom);
-            leftVertices.Add(leftOuterTop);
-            leftVertices.Add(leftInnerTop);
+            if (i == 0)
+            {
+                leftFrontOuterBottom = leftOuterBottom;
+                leftFrontInnerBottom = leftInnerBottom;
+                leftFrontOuterTop = leftOuterTop;
+                leftFrontInnerTop = leftInnerTop;
 
-            rightVertices.Add(rightOuterBottom);
-            rightVertices.Add(rightInnerBottom);
-            rightVertices.Add(rightOuterTop);
-            rightVertices.Add(rightInnerTop);
-        }
+                rightFrontOuterBottom = rightOuterBottom;
+                rightFrontInnerBottom = rightInnerBottom;
+                rightFrontOuterTop = rightOuterTop;
+                rightFrontInnerTop = rightInnerTop;
+            }
 
-        for (int j = 0; j < _resolution; j++)
-        {
-            int index = j * 4;
+            if (i == _resolution)
+            {
+                leftBackOuterBottom = leftOuterBottom;
+                leftBackInnerBottom = leftInnerBottom;
+                leftBackOuterTop = leftOuterTop;
+                leftBackInnerTop = leftInnerTop;
 
-            // 左壁の内側面
-            leftTriangles.Add(index + 1);
-            leftTriangles.Add(index + 3);
-            leftTriangles.Add(index + 5);
+                rightBackOuterBottom = rightOuterBottom;
+                rightBackInnerBottom = rightInnerBottom;
+                rightBackOuterTop = rightOuterTop;
+                rightBackInnerTop = rightInnerTop;
+            }
 
-            leftTriangles.Add(index + 3);
-            leftTriangles.Add(index + 7);
-            leftTriangles.Add(index + 5);
+            //左壁の内側面
+            leftInnerVertices.Add(leftInnerBottom);
+            leftInnerVertices.Add(leftInnerTop);
 
-            // 左壁の外側面
-            leftTriangles.Add(index);
-            leftTriangles.Add(index + 4);
-            leftTriangles.Add(index + 2);
-
-            leftTriangles.Add(index + 2);
-            leftTriangles.Add(index + 4);
-            leftTriangles.Add(index + 6);
+            //左壁の外側面
+            leftOuterVertices.Add(leftOuterBottom);
+            leftOuterVertices.Add(leftOuterTop);
 
             //左壁の上面
-            leftTriangles.Add(index + 2);
-            leftTriangles.Add(index + 6);
-            leftTriangles.Add(index + 3);
+            leftTopVertices.Add(leftOuterTop);
+            leftTopVertices.Add(leftInnerTop);
 
-            leftTriangles.Add(index + 3);
-            leftTriangles.Add(index + 6);
-            leftTriangles.Add(index + 7);
+            //右壁の内側面
+            rightInnerVertices.Add(rightInnerBottom);
+            rightInnerVertices.Add(rightInnerTop);
 
-            // 右壁の内側面
-            rightTriangles.Add(index + 1);
-            rightTriangles.Add(index + 5);
-            rightTriangles.Add(index + 3);
+            //右壁の外側面
+            rightOuterVertices.Add(rightOuterBottom);
+            rightOuterVertices.Add(rightOuterTop);
 
-            rightTriangles.Add(index + 3);
-            rightTriangles.Add(index + 5);
-            rightTriangles.Add(index + 7);
+            //右壁の上面
+            rightTopVertices.Add(rightInnerTop);
+            rightTopVertices.Add(rightOuterTop);
 
-            // 右壁の外側面
-            rightTriangles.Add(index);
-            rightTriangles.Add(index + 2);
-            rightTriangles.Add(index + 4);
+            float u = t * splineLength;
 
-            rightTriangles.Add(index + 2);
-            rightTriangles.Add(index + 6);
-            rightTriangles.Add(index + 4);
+            leftInnerUvs.Add(new Vector2(u, 0.0f));
+            leftInnerUvs.Add(new Vector2(u, _wallHeight));
 
-            // 右壁の上面
-            rightTriangles.Add(index + 2);
-            rightTriangles.Add(index + 3);
-            rightTriangles.Add(index + 6);
+            leftOuterUvs.Add(new Vector2(u, 0.0f));
+            leftOuterUvs.Add(new Vector2(u, _wallHeight));
 
-            rightTriangles.Add(index + 3);
-            rightTriangles.Add(index + 7);
-            rightTriangles.Add(index + 6);
+            rightInnerUvs.Add(new Vector2(u, 0.0f));
+            rightInnerUvs.Add(new Vector2(u, _wallHeight));
+
+            rightOuterUvs.Add(new Vector2(u, 0.0f));
+            rightOuterUvs.Add(new Vector2(u, _wallHeight));
+
+            leftTopUvs.Add(new Vector2(u, 0.0f));
+            leftTopUvs.Add(new Vector2(u, _wallThickness));
+
+            rightTopUvs.Add(new Vector2(u, 0.0f));
+            rightTopUvs.Add(new Vector2(u, _wallThickness));
         }
 
-        // 左壁の前面
-        leftTriangles.Add(0);
-        leftTriangles.Add(2);
-        leftTriangles.Add(1);
+        int leftInnerStartIndex = leftVertices.Count;
+        leftVertices.AddRange(leftInnerVertices);
+        leftUvs.AddRange(leftInnerUvs);
 
-        leftTriangles.Add(1);
-        leftTriangles.Add(2);
-        leftTriangles.Add(3);
+        int leftOuterStartIndex = leftVertices.Count;
+        leftVertices.AddRange(leftOuterVertices);
+        leftUvs.AddRange(leftOuterUvs);
 
-        // 右壁の前面
-        rightTriangles.Add(0);
-        rightTriangles.Add(1);
-        rightTriangles.Add(2);
+        int leftTopStartIndex = leftVertices.Count;
+        leftVertices.AddRange(leftTopVertices);
+        leftUvs.AddRange(leftTopUvs);
 
-        rightTriangles.Add(1);
-        rightTriangles.Add(3);
-        rightTriangles.Add(2);
+        int rightInnerStartIndex = rightVertices.Count;
+        rightVertices.AddRange(rightInnerVertices);
+        rightUvs.AddRange(rightInnerUvs);
 
-        int lastIndex = _resolution * 4;
+        int rightOuterStartIndex = rightVertices.Count;
+        rightVertices.AddRange(rightOuterVertices);
+        rightUvs.AddRange(rightOuterUvs);
 
-        // 左壁の後面
-        leftTriangles.Add(lastIndex);
-        leftTriangles.Add(lastIndex + 1);
-        leftTriangles.Add(lastIndex + 2);
+        int rightTopStartIndex = rightVertices.Count;
+        rightVertices.AddRange(rightTopVertices);
+        rightUvs.AddRange(rightTopUvs);
 
-        leftTriangles.Add(lastIndex + 1);
-        leftTriangles.Add(lastIndex + 3);
-        leftTriangles.Add(lastIndex + 2);
+        int leftFrontStartIndex = leftVertices.Count;
 
-        // 右壁の後面
-        rightTriangles.Add(lastIndex);
-        rightTriangles.Add(lastIndex + 2);
-        rightTriangles.Add(lastIndex + 1);
+        leftVertices.Add(leftFrontOuterBottom);
+        leftVertices.Add(leftFrontInnerBottom);
+        leftVertices.Add(leftFrontOuterTop);
+        leftVertices.Add(leftFrontInnerTop);
 
-        rightTriangles.Add(lastIndex + 1);
-        rightTriangles.Add(lastIndex + 2);
-        rightTriangles.Add(lastIndex + 3);
+        leftUvs.Add(new Vector2(0.0f, 0.0f));
+        leftUvs.Add(new Vector2(_wallThickness, 0.0f));
+        leftUvs.Add(new Vector2(0.0f, _wallHeight));
+        leftUvs.Add(new Vector2(_wallThickness, _wallHeight));
+
+        int leftBackStartIndex = leftVertices.Count;
+
+        leftVertices.Add(leftBackOuterBottom);
+        leftVertices.Add(leftBackInnerBottom);
+        leftVertices.Add(leftBackOuterTop);
+        leftVertices.Add(leftBackInnerTop);
+
+        leftUvs.Add(new Vector2(0.0f, 0.0f));
+        leftUvs.Add(new Vector2(_wallThickness, 0.0f));
+        leftUvs.Add(new Vector2(0.0f, _wallHeight));
+        leftUvs.Add(new Vector2(_wallThickness, _wallHeight));
+
+        int rightFrontStartIndex = rightVertices.Count;
+
+        rightVertices.Add(rightFrontOuterBottom);
+        rightVertices.Add(rightFrontInnerBottom);
+        rightVertices.Add(rightFrontOuterTop);
+        rightVertices.Add(rightFrontInnerTop);
+
+        rightUvs.Add(new Vector2(0.0f, 0.0f));
+        rightUvs.Add(new Vector2(_wallThickness, 0.0f));
+        rightUvs.Add(new Vector2(0.0f, _wallHeight));
+        rightUvs.Add(new Vector2(_wallThickness, _wallHeight));
+
+        int rightBackStartIndex = rightVertices.Count;
+
+        rightVertices.Add(rightBackOuterBottom);
+        rightVertices.Add(rightBackInnerBottom);
+        rightVertices.Add(rightBackOuterTop);
+        rightVertices.Add(rightBackInnerTop);
+
+        rightUvs.Add(new Vector2(0.0f, 0.0f));
+        rightUvs.Add(new Vector2(_wallThickness, 0.0f));
+        rightUvs.Add(new Vector2(0.0f, _wallHeight));
+        rightUvs.Add(new Vector2(_wallThickness, _wallHeight));
+
+        //左壁の内側面
+        for (int i = 0; i < _resolution; i++)
+        {
+            int index = leftInnerStartIndex + i * 2;
+
+            leftTriangles.Add(index);
+            leftTriangles.Add(index + 1);
+            leftTriangles.Add(index + 2);
+
+            leftTriangles.Add(index + 1);
+            leftTriangles.Add(index + 3);
+            leftTriangles.Add(index + 2);
+        }
+
+        //左壁の外側面
+        for (int i = 0; i < _resolution; i++)
+        {
+            int index = leftOuterStartIndex + i * 2;
+
+            leftTriangles.Add(index);
+            leftTriangles.Add(index + 2);
+            leftTriangles.Add(index + 1);
+
+            leftTriangles.Add(index + 1);
+            leftTriangles.Add(index + 2);
+            leftTriangles.Add(index + 3);
+        }
+
+        //左壁の上面
+        for (int i=0; i < _resolution; i++)
+        {
+            int index = leftTopStartIndex + i * 2;
+
+            leftTriangles.Add(index);
+            leftTriangles.Add(index + 2);
+            leftTriangles.Add(index + 1);
+
+            leftTriangles.Add(index + 1);
+            leftTriangles.Add(index + 2);
+            leftTriangles.Add(index + 3);
+        }
+
+        // 右壁の内側面
+        for (int i = 0; i < _resolution; i++)
+        {
+            int index = rightInnerStartIndex + i * 2;
+
+            rightTriangles.Add(index);
+            rightTriangles.Add(index + 2);
+            rightTriangles.Add(index + 1);
+
+            rightTriangles.Add(index + 1);
+            rightTriangles.Add(index + 2);
+            rightTriangles.Add(index + 3);
+        }
+
+        // 右壁の外側面
+        for (int i = 0; i < _resolution; i++)
+        {
+            int index = rightOuterStartIndex + i * 2;
+
+            rightTriangles.Add(index);
+            rightTriangles.Add(index + 1);
+            rightTriangles.Add(index + 2);
+
+            rightTriangles.Add(index + 1);
+            rightTriangles.Add(index + 3);
+            rightTriangles.Add(index + 2);
+        }
+
+        // 右壁の上面
+        for (int i = 0; i < _resolution; i++)
+        {
+            int index = rightTopStartIndex + i * 2;
+
+            rightTriangles.Add(index);
+            rightTriangles.Add(index + 2);
+            rightTriangles.Add(index + 1);
+
+            rightTriangles.Add(index + 1);
+            rightTriangles.Add(index + 2);
+            rightTriangles.Add(index + 3);
+        }
+
+        leftTriangles.Add(leftFrontStartIndex);
+        leftTriangles.Add(leftFrontStartIndex + 2);
+        leftTriangles.Add(leftFrontStartIndex + 1);
+
+        leftTriangles.Add(leftFrontStartIndex + 1);
+        leftTriangles.Add(leftFrontStartIndex + 2);
+        leftTriangles.Add(leftFrontStartIndex + 3);
+
+        leftTriangles.Add(leftBackStartIndex);
+        leftTriangles.Add(leftBackStartIndex + 1);
+        leftTriangles.Add(leftBackStartIndex + 2);
+
+        leftTriangles.Add(leftBackStartIndex + 1);
+        leftTriangles.Add(leftBackStartIndex + 3);
+        leftTriangles.Add(leftBackStartIndex + 2);
+
+        rightTriangles.Add(rightFrontStartIndex);
+        rightTriangles.Add(rightFrontStartIndex + 1);
+        rightTriangles.Add(rightFrontStartIndex + 2);
+
+        rightTriangles.Add(rightFrontStartIndex + 1);
+        rightTriangles.Add(rightFrontStartIndex + 3);
+        rightTriangles.Add(rightFrontStartIndex + 2);
+
+        rightTriangles.Add(rightBackStartIndex);
+        rightTriangles.Add(rightBackStartIndex + 2);
+        rightTriangles.Add(rightBackStartIndex + 1);
+
+        rightTriangles.Add(rightBackStartIndex + 1);
+        rightTriangles.Add(rightBackStartIndex + 2);
+        rightTriangles.Add(rightBackStartIndex + 3);
 
         Mesh leftMesh = new Mesh();
         leftMesh.name = "GeneratedLeftWall";
         leftMesh.SetVertices(leftVertices);
         leftMesh.SetTriangles(leftTriangles, 0);
+        leftMesh.SetUVs(0, leftUvs);
         leftMesh.RecalculateNormals();
+        leftMesh.RecalculateTangents();
         leftMesh.RecalculateBounds();
 
         _leftWallMeshFilter.sharedMesh = leftMesh;
@@ -220,7 +415,9 @@ public class WallMeshGenerator
         rightMesh.name = "GeneratedRightWall";
         rightMesh.SetVertices(rightVertices);
         rightMesh.SetTriangles(rightTriangles, 0);
+        rightMesh.SetUVs(0, rightUvs);
         rightMesh.RecalculateNormals();
+        rightMesh.RecalculateTangents();
         rightMesh.RecalculateBounds();
 
         _rightWallMeshFilter.sharedMesh = rightMesh;
