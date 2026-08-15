@@ -1,0 +1,5 @@
+Assets/Project/Fonts/DelaGothicOne-Regular[[:space:]]SDF.asset filter=lfs diff=lfs merge=lfs -text
+Assets/Project/Fonts/DelaGothicOne-Regular.ttf filter=lfs diff=lfs merge=lfs -text
+[200~Assets/TextMesh[[:space:]]Pro/Resources/Fonts[[:space:]]&[[:space:]]Materials/LiberationSans filter=lfs diff=lfs merge=lfs -text
+Assets/TextMesh[[:space:]]Pro/Resources/Fonts[[:space:]]&[[:space:]]Materials/LiberationSans
+SDF.asset filter=lfs diff=lfs merge=lfs -text
