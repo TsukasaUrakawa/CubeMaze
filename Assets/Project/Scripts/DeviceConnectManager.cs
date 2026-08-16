@@ -1,7 +1,6 @@
 using UnityEngine;
 using static JSL;
 using TMPro;
-using UnityEngine.InputSystem.LowLevel;
 
 public class DeviceConnectManager : MonoBehaviour
 {
@@ -13,6 +12,8 @@ public class DeviceConnectManager : MonoBehaviour
     }
     private ConnectState _connectState = ConnectState.disconnected;
     private int[] _handles;
+    private int[] _previousButtonsState;
+    private int _selectedHandle = -1;
     private void Start()
     {
         //接続されているデバイスの数を保存
@@ -25,6 +26,7 @@ public class DeviceConnectManager : MonoBehaviour
         {
             _connectState = ConnectState.selecting;
             _handles = new int[deviceCount];
+            _previousButtonsState = new int[deviceCount];
             JslGetConnectedDeviceHandles(_handles, _handles.Length);
             _textMeshPro.text = "ボタンを押してください";
         }
@@ -39,9 +41,17 @@ public class DeviceConnectManager : MonoBehaviour
     {
         if (_connectState == ConnectState.selecting)
         {
-            foreach (int handle in _handles)
+            for (int i = 0; i < _handles.Length; i++)
             {
-                JOY_SHOCK_STATE inputState = JslGetSimpleState(handle);
+                JOY_SHOCK_STATE inputState = JslGetSimpleState(_handles[i]);
+                int inputButtons = inputState.buttons;
+                int mask = 1 << ButtonMaskE;
+                if ((inputButtons & mask) == mask)
+                {
+                    _textMeshPro.text = "スタート！";
+                    _selectedHandle = _handles[i];
+                    _connectState = ConnectState.inUse;
+                }
             }
         }
     }
