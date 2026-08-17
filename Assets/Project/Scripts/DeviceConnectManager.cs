@@ -1,7 +1,6 @@
 using UnityEngine;
 using static JSL;
 using TMPro;
-using System.Collections;
 
 public class DeviceConnectManager : MonoBehaviour
 {
@@ -19,6 +18,13 @@ public class DeviceConnectManager : MonoBehaviour
     private int _deviceCount = 0;
     private int[] _handles; // デバイスの識別番号を格納する配列
     private int _selectedHandle = -1; // 選択されたデバイスの識別番号
+    public int SelectedHandle
+    {
+        get
+        {
+            return _selectedHandle;
+        }
+    }
 
     private int[] _previousButtonsState; // それぞれのデバイスにおける、前回のボタンの状態を保存する配列
 
