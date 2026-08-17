@@ -6,6 +6,7 @@ using System.Collections;
 public class DeviceConnectManager : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI _textMeshPro;
+    private float _timer = 0.0f;
     /// <summary>
     /// デバイスの現在の状態を示すenum
     /// </summary>
@@ -33,7 +34,11 @@ public class DeviceConnectManager : MonoBehaviour
         switch (_connectState)
         {
             case ConnectState.disconnected:
-                SearchDevice();
+                _timer += Time.deltaTime;
+                if (_timer > 0.5f)
+                {
+                    SearchDevice();
+                }
                 break;
             case ConnectState.selecting:
                 SelectDevice();
@@ -57,6 +62,7 @@ public class DeviceConnectManager : MonoBehaviour
         }
         else
         {
+            _timer = 0.0f;
             _textMeshPro.text = "デバイスが接続されていません";
         }
     }
@@ -91,6 +97,7 @@ public class DeviceConnectManager : MonoBehaviour
         {
             _textMeshPro.text = "デバイスが接続されていません";
             _connectState = ConnectState.disconnected;
+            _timer = 0.0f;
             _selectedHandle = -1;
         }
     }
