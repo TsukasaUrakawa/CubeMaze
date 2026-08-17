@@ -1,6 +1,7 @@
 using UnityEngine;
 using static JSL;
 using TMPro;
+using System.Collections;
 
 public class DeviceConnectManager : MonoBehaviour
 {
@@ -22,23 +23,9 @@ public class DeviceConnectManager : MonoBehaviour
 
     private int _mask = 1 << ButtonMaskE; // SwitchコントローラーのAボタンに対応するマスク値
 
-    private bool _stillConnected = false;
-
-
     private void Start()
     {
-        if (_deviceCount >= 1)
-        {
-            _connectState = ConnectState.selecting; // 選択中に移行
-            _handles = new int[_deviceCount];
-            _previousButtonsState = new int[_deviceCount];
-            
-            _textMeshPro.text = "Aボタンを押してください";
-        }
-        else
-        {
-            _textMeshPro.text = "デバイスが接続されていません";
-        }
+        SearchDevice();
     }
 
     private void Update()
@@ -57,45 +44,54 @@ public class DeviceConnectManager : MonoBehaviour
         }
     }
 
+    private void SearchDevice()
+    {
+        _deviceCount = JslConnectDevices(); // 接続されているデバイスの数を保存
+        if (_deviceCount >= 1)
+        {
+            _handles = new int[_deviceCount];
+            _previousButtonsState = new int[_deviceCount];
+            JslGetConnectedDeviceHandles(_handles, _handles.Length); // 接続中デバイスの識別番号を_handlesに格納
+            _connectState = ConnectState.selecting; // 選択中に移行
+            _textMeshPro.text = "Aボタンを押してください";
+        }
+        else
+        {
+            _textMeshPro.text = "デバイスが接続されていません";
+        }
+    }
+
     private void SelectDevice()
     {
-        if (_connectState == ConnectState.selecting)
+        for (int i = 0; i < _handles.Length; i++)
         {
-            for (int i = 0; i < _handles.Length; i++)
-            {
-                JOY_SHOCK_STATE inputState = JslGetSimpleState(_handles[i]);
-                int inputButtons = inputState.buttons; // デバイスのボタン情報のみを格納
+            JOY_SHOCK_STATE inputState = JslGetSimpleState(_handles[i]);
+            int inputButtons = inputState.buttons; // デバイスのボタン情報のみを格納
 
-                // Aボタンが押された瞬間を判定
-                if ((_previousButtonsState[i] & _mask) == 0 && (inputButtons & _mask) == _mask)
+            // Aボタンが押された瞬間を判定
+            if ((_previousButtonsState[i] & _mask) == 0 && (inputButtons & _mask) == _mask)
                 {
-                    _textMeshPro.text = "スタート！";
+                    _textMeshPro.text = "";
                     _selectedHandle = _handles[i];
                     _connectState = ConnectState.inUse;
                     return;
                 }
                 _previousButtonsState[i] = inputButtons;
             }
-        }
     }
 
     private void DetectDisconnected()
     {
-        _stillConnected = JslStillConnected(_selectedHandle);
-        if (_stillConnected )
+        bool stillConnected = JslStillConnected(_selectedHandle);
+        if (stillConnected)
         {
             return;
         }
         else
         {
+            _textMeshPro.text = "デバイスが接続されていません";
             _connectState = ConnectState.disconnected;
             _selectedHandle = -1;
         }
-    }
-
-    private void SearchDevice()
-    {
-        _deviceCount = JslConnectDevices(); // 接続されているデバイスの数を保存
-        JslGetConnectedDeviceHandles(_handles, _handles.Length); // 接続しているデバイスそれぞれの識別番号を_handlesに格納
     }
 }
