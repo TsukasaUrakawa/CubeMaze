@@ -13,6 +13,11 @@ public class GyroController : MonoBehaviour
     {
         int usingHandle = _deviceConnectManager.SelectedHandle;
         IMU_STATE imu = JslGetIMUState(usingHandle);
-        JslGetAndFlushAccumulatedGyro(usingHandle, ref imu.gyroX, ref imu.gyroY, ref imu.gyroZ);
+        MOTION_STATE motion = JslGetMotionState(usingHandle);
+        //Debug.Log($"加速度１{imu.accelX}, {imu.accelY}, {imu.accelZ}");
+        //Debug.Log($"加速度２{motion.accelX}, {motion.accelY}, {motion.accelZ}");
+        //Debug.Log($"ジャイロ{imu.gyroX}, {imu.gyroY}, {imu.gyroZ}");
+        Debug.Log($"クオータニオン{motion.quatW}, {motion.quatX}, {motion.quatY}, {motion.quatZ}");
+        //Debug.Log($"重力方向{motion.gravX}, {motion.gravY}, {motion.gravZ}");
     }
 }
