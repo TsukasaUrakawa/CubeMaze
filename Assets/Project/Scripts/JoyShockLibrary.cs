@@ -49,9 +49,11 @@ public static class JSL
     [StructLayout(LayoutKind.Sequential)]
     public struct IMU_STATE
     {
+        // 重力を含む加速度
         public float accelX;
         public float accelY;
         public float accelZ;
+        // コントローラーの回転速度
         public float gyroX;
         public float gyroY;
         public float gyroZ;
@@ -60,13 +62,16 @@ public static class JSL
     [StructLayout(LayoutKind.Sequential)]
     public struct MOTION_STATE
     {
+        // 3軸すべての姿勢
         public float quatW;
         public float quatX;
         public float quatY;
         public float quatZ;
+        // 重力を含まない加速度
         public float accelX;
         public float accelY;
         public float accelZ;
+        // コントローラーの傾き
         public float gravX;
         public float gravY;
         public float gravZ;

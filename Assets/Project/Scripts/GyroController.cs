@@ -7,6 +7,9 @@ public class GyroController : MonoBehaviour
     [SerializeField] private DeviceConnectManager _deviceConnectManager;
     private Rigidbody _rigidbody;
 
+    private Quaternion _currentRotation = Quaternion.identity;
+    private Quaternion _targetRotation = Quaternion.identity;
+
     void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
@@ -18,5 +21,11 @@ public class GyroController : MonoBehaviour
 
         IMU_STATE imu = JslGetIMUState(usingHandle);
         MOTION_STATE motion = JslGetMotionState(usingHandle);
+
+        _targetRotation = Quaternion.Euler(motion.quatX, motion.quatY, motion.quatZ);
+
+        this._rigidbody.rotation = Quaternion.Slerp(_currentRotation, _targetRotation, motion.quatZ);
+
+        _currentRotation = _targetRotation;
     }
 }
