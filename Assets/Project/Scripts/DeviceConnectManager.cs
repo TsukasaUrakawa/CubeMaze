@@ -9,11 +9,11 @@ public class DeviceConnectManager : MonoBehaviour
     /// <summary>
     /// デバイスの現在の状態を示すenum
     /// </summary>
-    enum ConnectState
+    public enum ConnectState
     {
         disconnected, selecting, inUse
     }
-    private ConnectState _connectState = ConnectState.disconnected;
+    public ConnectState _connectState = ConnectState.disconnected;
 
     private int _deviceCount = 0;
     private int[] _handles; // デバイスの識別番号を格納する配列
