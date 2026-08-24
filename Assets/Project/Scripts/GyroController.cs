@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.ProBuilder.MeshOperations;
 using static JSL;
 
 public class GyroController : MonoBehaviour
@@ -9,6 +10,7 @@ public class GyroController : MonoBehaviour
 
     private Quaternion _currentRotation = Quaternion.identity;
     private Quaternion _targetRotation = Quaternion.identity;
+    [SerializeField] private float _allowableValue = 0.000001f;
 
     void Start()
     {
@@ -17,25 +19,37 @@ public class GyroController : MonoBehaviour
 
     void Update()
     {
-        if(_deviceConnectManager._connectState == DeviceConnectManager.ConnectState.inUse)
+        if(_deviceConnectManager.CurrentConnectState == DeviceConnectManager.ConnectState.InUse)
         {
             int usingHandle = _deviceConnectManager.SelectedHandle;
             MOTION_STATE motion = JslGetMotionState(usingHandle);
 
             _targetRotation = new Quaternion(motion.quatX, motion.quatY, motion.quatZ, motion.quatW);
 
-            if(IsValid(_targetRotation))
+            if (IsValid(_targetRotation))
             {
+                _targetRotation.Normalize();
                 this._rigidbody.rotation = Quaternion.Slerp(_currentRotation, _targetRotation, _rotateSpeed);
+                _currentRotation = this._rigidbody.rotation;
             }
-            _currentRotation = this._rigidbody.rotation;
         }
     }
 
     private bool IsValid(Quaternion quaternion)
     {
-        float quaternionLength = quaternion.x * quaternion.x + quaternion.y * quaternion.y + quaternion.z * quaternion.z + quaternion.w * quaternion.w;
-        return !float.IsNaN(quaternion.x) && !float.IsNaN(quaternion.y) && !float.IsNaN(quaternion.z) && !float.IsNaN(quaternion.w) &&
-               !float.IsInfinity(quaternion.x) && !float.IsInfinity(quaternion.y) && !float.IsInfinity(quaternion.z) && !float.IsInfinity(quaternion.w);
+        if(float.IsNaN(quaternion.x) || float.IsNaN(quaternion.y) || float.IsNaN(quaternion.z) || float.IsNaN(quaternion.w) ||
+           float.IsInfinity(quaternion.x) || float.IsInfinity(quaternion.y) || float.IsInfinity(quaternion.z) || float.IsInfinity(quaternion.w))
+        {
+            return false;
+        }
+
+        float quaternionLength = Quaternion.Dot(quaternion, quaternion);
+
+        if(quaternionLength <= _allowableValue)
+        {
+            return false;
+        }
+
+        return true;
     }
 }

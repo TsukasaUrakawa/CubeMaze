@@ -2,6 +2,9 @@ using UnityEngine;
 using static JSL;
 using TMPro;
 
+/// <summary>
+/// デバイスの接続状態ごとの処理を管理するクラス
+/// </summary>
 public class DeviceConnectManager : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI _textMeshPro;
@@ -11,11 +14,19 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     public enum ConnectState
     {
-        disconnected, selecting, inUse
+        Disconnected, Selecting, InUse
     }
-    public ConnectState _connectState = ConnectState.disconnected;
+    private ConnectState _currentConnectState = ConnectState.Disconnected;
 
-    private int _deviceCount = 0;
+    public ConnectState CurrentConnectState
+    {
+        get
+        {
+            return _currentConnectState;
+        }
+    }
+
+    private int _deviceCount = 0; // デバイス数
     private int[] _handles; // デバイスの識別番号を格納する配列
     private int _selectedHandle = -1; // 選択されたデバイスの識別番号
     public int SelectedHandle
@@ -26,7 +37,7 @@ public class DeviceConnectManager : MonoBehaviour
         }
     }
 
-    private int[] _previousButtonsState; // それぞれのデバイスにおける、前回のボタンの状態を保存する配列
+    private int[] _previousButtonsState; // それぞれのデバイスにおける、前フレームのボタンの状態を保存する配列
 
     private int _mask = 1 << ButtonMaskE; // SwitchコントローラーのAボタンに対応するマスク値
 
@@ -37,19 +48,19 @@ public class DeviceConnectManager : MonoBehaviour
 
     private void Update()
     {
-        switch (_connectState)
+        switch (_currentConnectState)
         {
-            case ConnectState.disconnected:
+            case ConnectState.Disconnected:
                 _timer += Time.deltaTime;
                 if (_timer > 0.5f)
                 {
                     SearchDevice();
                 }
                 break;
-            case ConnectState.selecting:
+            case ConnectState.Selecting:
                 SelectDevice();
                 break;
-            case ConnectState.inUse:
+            case ConnectState.InUse:
                 DetectDisconnected();
                 break;
         }
@@ -63,7 +74,7 @@ public class DeviceConnectManager : MonoBehaviour
             _handles = new int[_deviceCount];
             _previousButtonsState = new int[_deviceCount];
             JslGetConnectedDeviceHandles(_handles, _handles.Length); // 接続中デバイスの識別番号を_handlesに格納
-            _connectState = ConnectState.selecting; // 選択中に移行
+            _currentConnectState = ConnectState.Selecting;
             _textMeshPro.text = "Aボタンを押してください";
         }
         else
@@ -75,21 +86,31 @@ public class DeviceConnectManager : MonoBehaviour
 
     private void SelectDevice()
     {
+        bool foundConnectingDevices = false;
         for (int i = 0; i < _handles.Length; i++)
         {
-            JOY_SHOCK_STATE inputState = JslGetSimpleState(_handles[i]);
-            int inputButtons = inputState.buttons; // デバイスのボタン情報のみを格納
+            if(JslStillConnected(_handles[i]))
+            {
+                foundConnectingDevices = true;
+                JOY_SHOCK_STATE inputState = JslGetSimpleState(_handles[i]);
+                int inputButtons = inputState.buttons; // デバイスのボタン情報のみを格納
 
-            // Aボタンが押された瞬間を判定
-            if ((_previousButtonsState[i] & _mask) == 0 && (inputButtons & _mask) == _mask)
+                // Aボタンが押された瞬間を判定
+                if ((_previousButtonsState[i] & _mask) == 0 && (inputButtons & _mask) == _mask)
                 {
                     _textMeshPro.text = "";
                     _selectedHandle = _handles[i];
-                    _connectState = ConnectState.inUse;
+                    _currentConnectState = ConnectState.InUse;
                     return;
                 }
                 _previousButtonsState[i] = inputButtons;
             }
+        }
+
+        if(!foundConnectingDevices)
+        {
+            HandleDisconnection();
+        }
     }
 
     private void DetectDisconnected()
@@ -101,10 +122,21 @@ public class DeviceConnectManager : MonoBehaviour
         }
         else
         {
-            _textMeshPro.text = "デバイスが接続されていません";
-            _connectState = ConnectState.disconnected;
-            _timer = 0.0f;
-            _selectedHandle = -1;
+            HandleDisconnection();
         }
+    }
+
+    private void HandleDisconnection()
+    {
+        _currentConnectState = ConnectState.Disconnected;
+        _textMeshPro.text = "デバイスが接続されていません";
+        _timer = 0.0f;
+        _selectedHandle = -1;
+        SearchDevice();
+    }
+
+    private void OnDestroy()
+    {
+        JslDisconnectAndDisposeAll();
     }
 }
