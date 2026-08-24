@@ -1,6 +1,9 @@
 using UnityEngine;
 using static JSL;
 using TMPro;
+using System.Runtime.InteropServices.WindowsRuntime;
+using UnityEngine.XR;
+using System.Collections;
 
 /// <summary>
 /// デバイスの接続状態ごとの処理を管理するクラス
@@ -74,8 +77,11 @@ public class DeviceConnectManager : MonoBehaviour
             _handles = new int[_deviceCount];
             _previousButtonsState = new int[_deviceCount];
             JslGetConnectedDeviceHandles(_handles, _handles.Length); // 接続中デバイスの識別番号を_handlesに格納
-            _currentConnectState = ConnectState.Selecting;
-            _textMeshPro.text = "Aボタンを押してください";
+
+            if (ChangeState(ConnectState.Selecting))
+            {
+                _textMeshPro.text = "Aボタンを押してください";
+            }
         }
         else
         {
@@ -96,11 +102,10 @@ public class DeviceConnectManager : MonoBehaviour
                 int inputButtons = inputState.buttons; // デバイスのボタン情報のみを格納
 
                 // Aボタンが押された瞬間を判定
-                if ((_previousButtonsState[i] & _mask) == 0 && (inputButtons & _mask) == _mask)
+                if ((_previousButtonsState[i] & _mask) == 0 && (inputButtons & _mask) == _mask && ChangeState(ConnectState.InUse))
                 {
                     _textMeshPro.text = "";
                     _selectedHandle = _handles[i];
-                    _currentConnectState = ConnectState.InUse;
                     return;
                 }
                 _previousButtonsState[i] = inputButtons;
@@ -128,11 +133,34 @@ public class DeviceConnectManager : MonoBehaviour
 
     private void HandleDisconnection()
     {
-        _currentConnectState = ConnectState.Disconnected;
-        _textMeshPro.text = "デバイスが接続されていません";
-        _timer = 0.0f;
-        _selectedHandle = -1;
-        SearchDevice();
+        if(ChangeState(ConnectState.Disconnected))
+        {
+            _textMeshPro.text = "デバイスが接続されていません";
+            _timer = 0.0f;
+            _selectedHandle = -1;
+            SearchDevice();
+        }
+    }
+
+    /// <summary>
+    /// 状態を遷移するメソッド
+    /// </summary>
+    /// <param name="nextState">遷移先の接続状態</param>
+    /// <returns>状態遷移に成功した場合はtrue、許可されていない遷移の場合はfalse</returns>
+    private bool ChangeState(ConnectState nextState)
+    {
+        switch(_currentConnectState, nextState)
+        {
+            case (ConnectState.Disconnected, ConnectState.Selecting):
+            case (ConnectState.Selecting, ConnectState.Disconnected):
+            case (ConnectState.Selecting, ConnectState.InUse):
+            case (ConnectState.InUse, ConnectState.Disconnected):
+            case (ConnectState.InUse, ConnectState.Selecting):
+                _currentConnectState = nextState;
+                return true;
+            default:
+                return false;
+        }
     }
 
     private void OnDestroy()
