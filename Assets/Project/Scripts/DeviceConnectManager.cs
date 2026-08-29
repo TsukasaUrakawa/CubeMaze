@@ -5,14 +5,14 @@ using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// デバイスの接続状態ごとの処理を管理するクラス
+/// デバイスの接続状態ごとの処理を管理する
 /// </summary>
 public class DeviceConnectManager : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI _textMeshPro;
-    private float _ElapsedTimer = 0.0f;
+    private float _searchDevicesElapsedTimer = 0.0f;
     /// <summary>
-    /// デバイスの現在の接続状態を示すenum
+    /// デバイスの現在の接続状態を示す
     /// </summary>
     public enum ConnectionState
     {
@@ -43,18 +43,13 @@ public class DeviceConnectManager : MonoBehaviour
 
     private int _aButtonMask = 1 << ButtonMaskE; // SwitchコントローラーのAボタンに対応するマスク値
 
-    private void Start()
-    {
-        SearchDevice();
-    }
-
     private void Update()
     {
         switch (_currentConnectionState)
         {
             case ConnectionState.Disconnected:
-                _ElapsedTimer += Time.deltaTime;
-                if (_ElapsedTimer > 0.5f)
+                _searchDevicesElapsedTimer += Time.deltaTime;
+                if (_searchDevicesElapsedTimer > 0.5f)
                 {
                     SearchDevice();
                     if (_connectedDeviceCount >= 1 && ChangeState(ConnectionState.Selecting))
@@ -63,7 +58,7 @@ public class DeviceConnectManager : MonoBehaviour
                     }
                     else if(_connectedDeviceCount == 0)
                     {
-                        _ElapsedTimer = 0.0f;
+                        _searchDevicesElapsedTimer = 0.0f;
                         _textMeshPro.text = "デバイスが接続されていません";
                     }
                 }
@@ -77,6 +72,9 @@ public class DeviceConnectManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 接続されているデバイスを検索する
+    /// </summary>
     private void SearchDevice()
     {
         _connectedDeviceCount = JslConnectDevices(); // 接続されているデバイスの数を保存
@@ -105,6 +103,9 @@ public class DeviceConnectManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 接続されている複数のデバイスの中から使用するデバイスを選択する
+    /// </summary>
     private void SelectDevice()
     {
         bool hasConnectedDevice = false;
@@ -140,6 +141,9 @@ public class DeviceConnectManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// デバイスの切断を検知する
+    /// </summary>
     private void DetectDisconnected()
     {
         bool isSelectedDeviceConnected = JslStillConnected(_selectedDeviceHandle);
@@ -153,19 +157,21 @@ public class DeviceConnectManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 切断時の処理をする
+    /// </summary>
     private void HandleDisconnection()
     {
         if(ChangeState(ConnectionState.Disconnected))
         {
             _textMeshPro.text = "デバイスが接続されていません";
-            _ElapsedTimer = 0.0f;
+            _searchDevicesElapsedTimer = 0.0f;
             _selectedDeviceHandle = -1;
-            SearchDevice();
         }
     }
 
     /// <summary>
-    /// 状態を遷移するメソッド
+    /// 状態を遷移する
     /// </summary>
     /// <param name="nextState">遷移先の接続状態</param>
     /// <returns>状態遷移に成功した場合はtrue、許可されていない遷移の場合はfalse</returns>
@@ -187,6 +193,9 @@ public class DeviceConnectManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ゲーム終了時にリソースを解放する
+    /// </summary>
     private void OnDestroy()
     {
         JslDisconnectAndDisposeAll();
