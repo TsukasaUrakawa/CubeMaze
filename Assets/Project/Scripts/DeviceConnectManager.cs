@@ -3,6 +3,7 @@ using static JSL;
 using TMPro;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 /// <summary>
 /// デバイスの接続状態ごとの処理を管理する
@@ -52,18 +53,32 @@ public class DeviceConnectManager : MonoBehaviour
                 if (_searchDevicesElapsedTimer > 0.5f)
                 {
                     SearchDevice();
+                    _searchDevicesElapsedTimer = 0.0f;
                     if (_connectedDeviceCount >= 1 && ChangeState(ConnectionState.Selecting))
                     {
                         _textMeshPro.text = "Aボタンを押してください";
                     }
                     else if(_connectedDeviceCount == 0)
                     {
-                        _searchDevicesElapsedTimer = 0.0f;
                         _textMeshPro.text = "デバイスが接続されていません";
                     }
                 }
                 break;
             case ConnectionState.Selecting:
+                _searchDevicesElapsedTimer += Time.deltaTime;
+                if (_searchDevicesElapsedTimer > 0.5f)
+                {
+                    SearchDevice();
+                    _searchDevicesElapsedTimer = 0.0f;
+                    if (_connectedDeviceCount >= 1)
+                    {
+                        _textMeshPro.text = "Aボタンを押してください";
+                    }
+                    else
+                    {
+                        _textMeshPro.text = "デバイスが接続されていません";
+                    }
+                }
                 SelectDevice();
                 break;
             case ConnectionState.InUse:
@@ -77,13 +92,20 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     private void SearchDevice()
     {
-        _connectedDeviceCount = JslConnectDevices(); // 接続されているデバイスの数を保存
+        _connectedDeviceCount = JslConnectDevices(); // 認識したデバイスの数を保存
         if (_connectedDeviceCount >= 1)
         {
             int[] detectedDeviceHandles = new int[_connectedDeviceCount];
-            JslGetConnectedDeviceHandles(detectedDeviceHandles, detectedDeviceHandles.Length); // 最新の接続中デバイスの識別番号を取得
+            JslGetConnectedDeviceHandles(detectedDeviceHandles, detectedDeviceHandles.Length); // 認識したデバイスの識別番号を取得
 
-            // 前回と最新の検索時の識別番号を比較
+            IEnumerable<int> onlyRegisteredDictionaryHandles = _previousButtonStatesByHandle.Keys.Except(detectedDeviceHandles);
+            int[] disconnectedHandles = onlyRegisteredDictionaryHandles.ToArray();
+            foreach (int disconnectedHandle in disconnectedHandles)
+            {
+                _previousButtonStatesByHandle.Remove(disconnectedHandle);
+            }
+
+            // 前回と今回の検索時で識別番号を比較
             foreach (int detectedDeviceHandle in detectedDeviceHandles)
             {
                 if (_previousButtonStatesByHandle.ContainsKey(detectedDeviceHandle))
@@ -91,6 +113,7 @@ public class DeviceConnectManager : MonoBehaviour
                     continue;
                 }
 
+                // 前回までの検索時にないデバイスは追加する
                 else
                 {
                     JOY_SHOCK_STATE currentInputState = JslGetSimpleState(detectedDeviceHandle);
@@ -99,7 +122,13 @@ public class DeviceConnectManager : MonoBehaviour
                     _previousButtonStatesByHandle.Add(detectedDeviceHandle, initialButtonState);
                 }
             }
-            _connectedDeviceHandles = detectedDeviceHandles;
+            _connectedDeviceHandles = detectedDeviceHandles; // 認識済みデバイスの識別番号を接続済みデバイスの識別番号として保存
+        }
+        else
+        {
+            int[] emptyArray = Array.Empty<int>();
+            _connectedDeviceHandles = emptyArray;
+            _previousButtonStatesByHandle.Clear();
         }
     }
 
@@ -108,8 +137,9 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     private void SelectDevice()
     {
-        bool hasConnectedDevice = false;
-        foreach(int connectedDeviceHandle in _connectedDeviceHandles)
+        bool hasConnectedDevice = false; // 接続し続けているか判定する
+
+        foreach (int connectedDeviceHandle in _connectedDeviceHandles)
         {
             if(JslStillConnected(connectedDeviceHandle))
             {
@@ -166,6 +196,7 @@ public class DeviceConnectManager : MonoBehaviour
         {
             _textMeshPro.text = "デバイスが接続されていません";
             _searchDevicesElapsedTimer = 0.0f;
+            _previousButtonStatesByHandle.Clear();
             _selectedDeviceHandle = -1;
         }
     }
