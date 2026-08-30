@@ -1,7 +1,6 @@
 using UnityEngine;
 using static JSL;
 using TMPro;
-using System.Collections.Generic;
 using System.Linq;
 using System;
 
@@ -17,15 +16,33 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     public enum ConnectionState
     {
-        Disconnected, Selecting, InUse
+        Preparing, Searching, Selecting, InUse
     }
-    private ConnectionState _currentConnectionState = ConnectionState.Disconnected;
+    private ConnectionState _currentConnectionState = ConnectionState.Preparing;
 
     public ConnectionState CurrentConnectionState
     {
         get
         {
             return _currentConnectionState;
+        }
+    }
+
+    /// <summary>
+    /// ConnectionStateがPreparingの時の理由を示す
+    /// </summary>
+    public enum PreparingState
+    {
+        InitialConnect, FoundNoDevices, DisconnectionInSelect, DisconnectionInUse
+    }
+
+    private PreparingState _currentPreparingState = PreparingState.InitialConnect;
+
+    public PreparingState CurrentPreparingState
+    {
+        get
+        {
+            return _currentPreparingState;
         }
     }
 
@@ -39,46 +56,30 @@ public class DeviceConnectManager : MonoBehaviour
             return _selectedDeviceHandle;
         }
     }
-
-    private Dictionary<int, int> _previousButtonStatesByHandle = new Dictionary<int, int>();
-
-    private int _aButtonMask = 1 << ButtonMaskE; // SwitchコントローラーのAボタンに対応するマスク値
-
     private void Update()
     {
         switch (_currentConnectionState)
         {
-            case ConnectionState.Disconnected:
+            case ConnectionState.Preparing:
+                ShowMessage();
+                break;
+            case ConnectionState.Searching:
                 _searchDevicesElapsedTimer += Time.deltaTime;
                 if (_searchDevicesElapsedTimer > 0.5f)
                 {
                     SearchDevice();
                     _searchDevicesElapsedTimer = 0.0f;
-                    if (_connectedDeviceCount >= 1 && ChangeState(ConnectionState.Selecting))
+                    if (_connectedDeviceCount >= 1 && ChangeConnectionState(ConnectionState.Selecting))
                     {
-                        _textMeshPro.text = "Aボタンを押してください";
+                        _textMeshPro.text = "";
                     }
-                    else if(_connectedDeviceCount == 0)
+                    else if (_connectedDeviceCount == 0)
                     {
-                        _textMeshPro.text = "デバイスが接続されていません";
+                        ChangePreparingState(PreparingState.FoundNoDevices);
                     }
                 }
                 break;
             case ConnectionState.Selecting:
-                _searchDevicesElapsedTimer += Time.deltaTime;
-                if (_searchDevicesElapsedTimer > 0.5f)
-                {
-                    SearchDevice();
-                    _searchDevicesElapsedTimer = 0.0f;
-                    if (_connectedDeviceCount >= 1)
-                    {
-                        _textMeshPro.text = "Aボタンを押してください";
-                    }
-                    else
-                    {
-                        _textMeshPro.text = "デバイスが接続されていません";
-                    }
-                }
                 SelectDevice();
                 break;
             case ConnectionState.InUse:
@@ -97,38 +98,12 @@ public class DeviceConnectManager : MonoBehaviour
         {
             int[] detectedDeviceHandles = new int[_connectedDeviceCount];
             JslGetConnectedDeviceHandles(detectedDeviceHandles, detectedDeviceHandles.Length); // 認識したデバイスの識別番号を取得
-
-            IEnumerable<int> onlyRegisteredDictionaryHandles = _previousButtonStatesByHandle.Keys.Except(detectedDeviceHandles);
-            int[] disconnectedHandles = onlyRegisteredDictionaryHandles.ToArray();
-            foreach (int disconnectedHandle in disconnectedHandles)
-            {
-                _previousButtonStatesByHandle.Remove(disconnectedHandle);
-            }
-
-            // 前回と今回の検索時で識別番号を比較
-            foreach (int detectedDeviceHandle in detectedDeviceHandles)
-            {
-                if (_previousButtonStatesByHandle.ContainsKey(detectedDeviceHandle))
-                {
-                    continue;
-                }
-
-                // 前回までの検索時にないデバイスは追加する
-                else
-                {
-                    JOY_SHOCK_STATE currentInputState = JslGetSimpleState(detectedDeviceHandle);
-                    int initialButtonState = currentInputState.buttons;
-
-                    _previousButtonStatesByHandle.Add(detectedDeviceHandle, initialButtonState);
-                }
-            }
             _connectedDeviceHandles = detectedDeviceHandles; // 認識済みデバイスの識別番号を接続済みデバイスの識別番号として保存
         }
         else
         {
             int[] emptyArray = Array.Empty<int>();
             _connectedDeviceHandles = emptyArray;
-            _previousButtonStatesByHandle.Clear();
         }
     }
 
@@ -141,31 +116,14 @@ public class DeviceConnectManager : MonoBehaviour
 
         foreach (int connectedDeviceHandle in _connectedDeviceHandles)
         {
-            if(JslStillConnected(connectedDeviceHandle))
+            // 接続確認
+            if (JslStillConnected(connectedDeviceHandle))
             {
                 hasConnectedDevice = true;
-
-                if(_previousButtonStatesByHandle.ContainsKey(connectedDeviceHandle))
-                {
-                    int previousButtonState = _previousButtonStatesByHandle[connectedDeviceHandle];
-
-                    JOY_SHOCK_STATE currentInputState = JslGetSimpleState(connectedDeviceHandle);
-                    int currentButtonState = currentInputState.buttons;
-                    // Aボタンが押された瞬間を判定
-                    if ((previousButtonState & _aButtonMask) == 0 && (currentButtonState & _aButtonMask) == _aButtonMask)
-                    {
-                        ChangeState(ConnectionState.InUse);
-                        _textMeshPro.text = "";
-                        _selectedDeviceHandle = connectedDeviceHandle;
-                        return;
-                    }
-
-                    _previousButtonStatesByHandle[connectedDeviceHandle] = currentButtonState;
-                }
             }
         }
 
-        if(!hasConnectedDevice)
+        if (!hasConnectedDevice)
         {
             HandleDisconnection();
         }
@@ -192,13 +150,21 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     private void HandleDisconnection()
     {
-        if(ChangeState(ConnectionState.Disconnected))
+        switch (_currentConnectionState)
         {
-            _textMeshPro.text = "デバイスが接続されていません";
-            _searchDevicesElapsedTimer = 0.0f;
-            _previousButtonStatesByHandle.Clear();
-            _selectedDeviceHandle = -1;
+            case (ConnectionState.Selecting):
+                {
+                    ChangePreparingState(PreparingState.DisconnectionInSelect);
+                }
+                break;
+            case (ConnectionState.InUse):
+                {
+                    ChangePreparingState(PreparingState.DisconnectionInUse);
+                }
+                break;
         }
+        _searchDevicesElapsedTimer = 0.0f;
+        _selectedDeviceHandle = -1;
     }
 
     /// <summary>
@@ -206,21 +172,84 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     /// <param name="nextState">遷移先の接続状態</param>
     /// <returns>状態遷移に成功した場合はtrue、許可されていない遷移の場合はfalse</returns>
-    private bool ChangeState(ConnectionState nextState)
+    private bool ChangeConnectionState(ConnectionState nextState)
     {
-        switch(_currentConnectionState, nextState)
+        switch (_currentConnectionState, nextState)
         {
-            case (ConnectionState.Disconnected, ConnectionState.Selecting):
-            case (ConnectionState.Selecting, ConnectionState.Disconnected):
+            case (ConnectionState.Preparing, ConnectionState.Searching):
+            case (ConnectionState.Searching, ConnectionState.Selecting):
+            case (ConnectionState.Searching, ConnectionState.Preparing):
             case (ConnectionState.Selecting, ConnectionState.InUse):
-            case (ConnectionState.InUse, ConnectionState.Disconnected):
-            case (ConnectionState.InUse, ConnectionState.Selecting):
+            case (ConnectionState.Selecting, ConnectionState.Preparing):
+            case (ConnectionState.InUse, ConnectionState.Preparing):
                 {
                     _currentConnectionState = nextState;
                     return true;
                 }
-            default:
-                return false;
+            default: return false;
+        }
+    }
+
+    private void ChangePreparingState(PreparingState changeReason)
+    {
+        switch (_currentConnectionState, changeReason)
+        {
+            case (ConnectionState.Searching, PreparingState.FoundNoDevices):
+            case (ConnectionState.Selecting, PreparingState.DisconnectionInSelect):
+            case (ConnectionState.InUse, PreparingState.DisconnectionInUse):
+                {
+                    if (ChangeConnectionState(ConnectionState.Preparing))
+                    {
+                        _currentPreparingState = changeReason;
+                        ShowMessage();
+                    }
+                    break;
+                }
+            default: break;
+        }
+    }
+
+    private void ShowMessage()
+    {
+        switch (_currentPreparingState)
+        {
+            case (PreparingState.InitialConnect):
+                _textMeshPro.text = "使用するデバイスを接続してください";
+                break;
+            case (PreparingState.FoundNoDevices):
+                _textMeshPro.text = "デバイスが見つかりませんでした";
+                break;
+            case (PreparingState.DisconnectionInSelect):
+                _textMeshPro.text = "選択リストのデバイスが全て切断されました";
+                break;
+            case (PreparingState.DisconnectionInUse):
+                _textMeshPro.text = "使用中のデバイスが切断されました";
+                break;
+        }
+    }
+
+    /// <summary>
+    /// デバイスの選択ボタンを押したときに実行する
+    /// </summary>
+    /// <param name="decidedDeviceHandle">選択したデバイスの識別番号</param>
+    public void DecideUsingDevice(int decidedDeviceHandle)
+    {
+        if (_currentConnectionState != ConnectionState.Selecting || !_connectedDeviceHandles.Contains(decidedDeviceHandle) || !JslStillConnected(decidedDeviceHandle))
+        {
+            return;
+        }
+        _selectedDeviceHandle = decidedDeviceHandle;
+        ChangeConnectionState(ConnectionState.InUse);
+    }
+
+    /// <summary>
+    /// 検索ボタンを押したときに実行する
+    /// </summary>
+    public void RequireSearch()
+    {
+        if (_currentConnectionState == ConnectionState.Preparing)
+        {
+            ChangeConnectionState(ConnectionState.Searching);
         }
     }
 

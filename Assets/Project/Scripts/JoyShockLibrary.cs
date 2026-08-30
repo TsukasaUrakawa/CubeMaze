@@ -1,11 +1,6 @@
 ﻿// This doesn't reflect the latest features in JoyShockLibrary 3.0. But this is a good starting point for filling in the new functions and structs found in JoyShockLibrary.h.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEditor;
-using UnityEngine;
 
 public static class JSL
 {
