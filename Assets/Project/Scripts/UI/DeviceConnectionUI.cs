@@ -13,6 +13,16 @@ public class DeviceConnectionUI : MonoBehaviour
     /// <param name="selectionCandidates">選択候補</param>
     private void ReceiveSelectionEvent(IReadOnlyList<int> selectionCandidates)
     {
+        // Contentの子オブジェクトの総数を保存
+        int childCount = _contentTransform.childCount;
+        // Contentの子オブジェクトを一つずつ削除
+        for (int i = 0; i < childCount; i++)
+        {
+            Transform child = _contentTransform.GetChild(i);
+            Destroy(child.gameObject);
+        }
+
+        // 選択候補のButtonを一つずつ生成
         foreach (int selectioncandidate in selectionCandidates)
         {
             DeviceListItem deviceListItem;
@@ -23,11 +33,11 @@ public class DeviceConnectionUI : MonoBehaviour
 
     private void OnEnable()
     {
-        _deviceConnectManager.SelectionCandidatesPrepared += ReceiveSelectionEvent;
+        _deviceConnectManager.SelectionCandidatesChanged += ReceiveSelectionEvent;
     }
 
     private void OnDisable()
     {
-        _deviceConnectManager.SelectionCandidatesPrepared -= ReceiveSelectionEvent;
+        _deviceConnectManager.SelectionCandidatesChanged -= ReceiveSelectionEvent;
     }
 }

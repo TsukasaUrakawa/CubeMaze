@@ -11,7 +11,7 @@ using static JSL;
 public class DeviceConnectManager : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI _textMeshPro;
-    private float _searchDevicesElapsedTimer = 0.0f;
+
     /// <summary>
     /// デバイスの現在の接続状態を示す
     /// </summary>
@@ -58,7 +58,7 @@ public class DeviceConnectManager : MonoBehaviour
         }
     }
 
-    public event Action<IReadOnlyList<int>> SelectionCandidatesPrepared;
+    public event Action<IReadOnlyList<int>> SelectionCandidatesChanged;
 
     private void Update()
     {
@@ -68,21 +68,16 @@ public class DeviceConnectManager : MonoBehaviour
                 ShowMessage();
                 break;
             case ConnectionState.Searching:
-                _searchDevicesElapsedTimer += Time.deltaTime;
-                if (_searchDevicesElapsedTimer > 0.5f)
+                SearchDevice();
+                if (_connectedDeviceCount >= 1 && ChangeConnectionState(ConnectionState.Selecting))
                 {
-                    SearchDevice();
-                    _searchDevicesElapsedTimer = 0.0f;
-                    if (_connectedDeviceCount >= 1 && ChangeConnectionState(ConnectionState.Selecting))
-                    {
-                        // 選択候補の準備が完了したことのイベント通知
-                        SelectionCandidatesPrepared?.Invoke(_connectedDeviceHandles);
-                        _textMeshPro.text = "";
-                    }
-                    else if (_connectedDeviceCount == 0)
-                    {
-                        ChangePreparingState(PreparingState.FoundNoDevices);
-                    }
+                    // 選択候補の準備が完了したことのイベント通知
+                    SelectionCandidatesChanged?.Invoke(_connectedDeviceHandles);
+                    _textMeshPro.text = "";
+                }
+                else if (_connectedDeviceCount == 0)
+                {
+                    ChangePreparingState(PreparingState.FoundNoDevices);
                 }
                 break;
             case ConnectionState.Selecting:
@@ -169,7 +164,6 @@ public class DeviceConnectManager : MonoBehaviour
                 }
                 break;
         }
-        _searchDevicesElapsedTimer = 0.0f;
         _selectedDeviceHandle = -1;
     }
 
@@ -208,6 +202,7 @@ public class DeviceConnectManager : MonoBehaviour
                     {
                         _currentPreparingState = changeReason;
                         ShowMessage();
+                        SelectionCandidatesChanged?.Invoke(Array.Empty<int>());
                     }
                     break;
                 }
