@@ -21,7 +21,7 @@ public class GyroController : MonoBehaviour
     {
         if(_deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse)
         {
-            int usingHandle = _deviceConnectManager.SelectedDeviceHandle;
+            int usingHandle = _deviceConnectManager.InUseDeviceHandle;
             MOTION_STATE motion = JslGetMotionState(usingHandle);
 
             _targetRotation = new Quaternion(motion.quatX, motion.quatY, motion.quatZ, motion.quatW);

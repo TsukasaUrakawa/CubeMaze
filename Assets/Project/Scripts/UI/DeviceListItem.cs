@@ -6,19 +6,22 @@ public class DeviceListItem : MonoBehaviour
 {
     private int _deviceHandle = -1;
     [SerializeField] private TextMeshProUGUI _deviceNameText;
-    public event Action<int> NoticeSelectedDevice;
+    /// <summary>
+    /// 選択されたデバイスを渡す
+    /// </summary>
+    public event Action<int> DeviceSelectionRequested;
 
-    public void InitializeDeviceInfo(int deviceHandle, string deviceModelText)
+    public void InitializeDeviceInfo(int deviceHandle, string deviceDisplayName)
     {
         _deviceHandle = deviceHandle;
-        _deviceNameText.text = deviceModelText;
+        _deviceNameText.text = deviceDisplayName;
     }
     /// <summary>
     /// DeviceListItemのOnClickから呼ばれる
-    /// デバイスの識別番号を通知する
+    /// デバイスの識別番号を渡す
     /// </summary>
-    public void NoticeDeviceHandle()
+    public void RequestDeviceSelection()
     {
-        NoticeSelectedDevice?.Invoke(_deviceHandle);
+        DeviceSelectionRequested?.Invoke(_deviceHandle);
     }
 }

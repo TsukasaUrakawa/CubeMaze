@@ -1232,7 +1232,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c308e11a8bd81e46b62fa70c08149e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _textMeshPro: {fileID: 1409871550}
+  _messageText: {fileID: 1409871550}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1995,7 +1995,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _deviceListItemPrefab: {fileID: 8321862906147720396, guid: 814f11939c0e24841be5c4b73d7df5da, type: 3}
-  _contentTransform: {fileID: 513690994}
+  _deviceListContent: {fileID: 513690994}
   _deviceConnectManager: {fileID: 814212697}
 --- !u!1 &1376766712
 GameObject:

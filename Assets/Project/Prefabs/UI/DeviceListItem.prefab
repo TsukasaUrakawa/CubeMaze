@@ -125,7 +125,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 8321862906147720396}
         m_TargetAssemblyTypeName: DeviceListItem, Assembly-CSharp
-        m_MethodName: NoticeDeviceHandle
+        m_MethodName: RequestDeviceSelection
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
