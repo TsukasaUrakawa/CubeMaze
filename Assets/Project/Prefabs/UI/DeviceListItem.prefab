@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2271591461739029530}
   - component: {fileID: 8472065477580946831}
   - component: {fileID: 1452304949508327938}
+  - component: {fileID: 8321862906147720396}
   m_Layer: 5
   m_Name: DeviceListItem
   m_TagString: Untagged
@@ -121,7 +122,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2271591461739029530}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 8321862906147720396}
+        m_TargetAssemblyTypeName: DeviceListItem, Assembly-CSharp
+        m_MethodName: NoticeDeviceHandle
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1452304949508327938
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -142,6 +155,19 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &8321862906147720396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5098812502752734721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d39b289d6d737714e96eb179a8c25948, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _deviceNameText: {fileID: 6809769766454177555}
 --- !u!1 &5699528209486165340
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,8 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
 using static JSL;
-using TMPro;
-using System.Linq;
-using System;
 
 /// <summary>
 /// デバイスの接続状態ごとの処理を管理する
@@ -56,6 +57,9 @@ public class DeviceConnectManager : MonoBehaviour
             return _selectedDeviceHandle;
         }
     }
+
+    public event Action<IReadOnlyList<int>> SelectionCandidatesPrepared;
+
     private void Update()
     {
         switch (_currentConnectionState)
@@ -71,6 +75,8 @@ public class DeviceConnectManager : MonoBehaviour
                     _searchDevicesElapsedTimer = 0.0f;
                     if (_connectedDeviceCount >= 1 && ChangeConnectionState(ConnectionState.Selecting))
                     {
+                        // 選択候補の準備が完了したことのイベント通知
+                        SelectionCandidatesPrepared?.Invoke(_connectedDeviceHandles);
                         _textMeshPro.text = "";
                     }
                     else if (_connectedDeviceCount == 0)
