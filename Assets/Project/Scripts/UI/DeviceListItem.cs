@@ -2,8 +2,14 @@ using System;
 using TMPro;
 using UnityEngine;
 
+/// <summary>
+/// UIに存在するDeviceListItemの処理
+/// </summary>
 public class DeviceListItem : MonoBehaviour
 {
+    /// <summary>
+    /// 選択候補にあるデバイスそれぞれの識別番号を格納
+    /// </summary>
     private int _deviceHandle = -1;
     [SerializeField] private TextMeshProUGUI _deviceNameText;
     /// <summary>
@@ -16,6 +22,7 @@ public class DeviceListItem : MonoBehaviour
         _deviceHandle = deviceHandle;
         _deviceNameText.text = deviceDisplayName;
     }
+
     /// <summary>
     /// DeviceListItemのOnClickから呼ばれる
     /// デバイスの識別番号を渡す

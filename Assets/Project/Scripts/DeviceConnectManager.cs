@@ -6,14 +6,14 @@ using UnityEngine;
 using static JSL;
 
 /// <summary>
-/// デバイスの接続状態ごとの処理を管理する
+/// デバイスの接続状態ごとの処理を管理
 /// </summary>
 public class DeviceConnectManager : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI _messageText;
 
     /// <summary>
-    /// デバイスの現在の接続状態を示す
+    /// デバイスの現在の接続状態
     /// </summary>
     public enum ConnectionState
     {
@@ -26,7 +26,7 @@ public class DeviceConnectManager : MonoBehaviour
         /// </summary>
         Searching,
         /// <summary>
-        /// 接続済みのデバイスから一つ選択している状態
+        /// 接続済みのデバイスから一つ選択する状態
         /// </summary>
         Selecting,
         /// <summary>
@@ -85,7 +85,7 @@ public class DeviceConnectManager : MonoBehaviour
     }
 
     private int _detectedDeviceCount = 0; // 接続済みのデバイス数
-    private int[] _selectionCandidateHandles; // 接続済みのデバイスの識別番号を格納する
+    private int[] _selectionCandidateHandles; // 接続済みのデバイスの識別番号を格納
     private int _inUseDeviceHandle = -1; // 選択されたデバイスの識別番号
     public int InUseDeviceHandle
     {
@@ -96,7 +96,7 @@ public class DeviceConnectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 選択候補一覧の変化を他のクラスに通知する
+    /// 選択候補一覧の変化を他のクラスに通知
     /// </summary>
     public event Action<IReadOnlyList<int>> SelectionCandidatesChanged;
 
@@ -133,17 +133,17 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     private void SearchDevices()
     {
-        _detectedDeviceCount = JslConnectDevices(); // 認識した接続済みのデバイスの数を保存
+        _detectedDeviceCount = JslConnectDevices(); // 認識した接続済みのデバイス数を保存
         if (_detectedDeviceCount >= 1)
         {
             int[] detectedDeviceHandles = new int[_detectedDeviceCount];
-            JslGetConnectedDeviceHandles(detectedDeviceHandles, detectedDeviceHandles.Length); // 認識したデバイスの識別番号を取得
-            _selectionCandidateHandles = detectedDeviceHandles; // 認識済みデバイスの識別番号を接続済みデバイスの識別番号として保存
+            JslGetConnectedDeviceHandles(detectedDeviceHandles, detectedDeviceHandles.Length); // 認識した接続済みのデバイスの識別番号を取得
+            _selectionCandidateHandles = detectedDeviceHandles; // 認識した接続済みのデバイスの識別番号を保存
         }
         else
         {
             int[] emptyIntArray = Array.Empty<int>();
-            _selectionCandidateHandles = emptyIntArray;
+            _selectionCandidateHandles = emptyIntArray; // 選択候補の識別番号をリセット
         }
     }
 
@@ -200,14 +200,14 @@ public class DeviceConnectManager : MonoBehaviour
             case (ConnectionState.InUse):
                 {
                     TransitionToPreparing(PreparingReason.InUseDeviceDisconnected);
+                    _inUseDeviceHandle = -1;
                 }
                 break;
         }
-        _inUseDeviceHandle = -1;
     }
 
     /// <summary>
-    /// 状態を遷移する
+    /// 状態を遷移
     /// </summary>
     /// <param name="nextState">遷移先の接続状態</param>
     /// <returns>状態遷移に成功した場合はtrue、許可されていない遷移の場合はfalse</returns>
@@ -230,7 +230,7 @@ public class DeviceConnectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 接続状態とPreparing状態の理由を検証
+    /// Preparing状態の理由ごとの処理
     /// </summary>
     /// <param name="preparingReason">Preparing状態の理由</param>
     private void TransitionToPreparing(PreparingReason preparingReason)
@@ -245,7 +245,7 @@ public class DeviceConnectManager : MonoBehaviour
                     {
                         _currentPreparingReason = preparingReason;
                         ShowPreparingMessage();
-                        SelectionCandidatesChanged?.Invoke(Array.Empty<int>()); // 空の配列を渡す
+                        SelectionCandidatesChanged?.Invoke(Array.Empty<int>()); // 選択候補の変化をDeviceConnectionUIに通知
                     }
                     break;
                 }
