@@ -30,6 +30,10 @@ public class DeviceConnectManager : MonoBehaviour
         /// </summary>
         Selecting,
         /// <summary>
+        /// キャリブレーションしている状態
+        /// </summary>
+        Calibrating,
+        /// <summary>
         /// 接続済みのデバイスを使用している状態
         /// </summary>
         InUse
@@ -66,9 +70,9 @@ public class DeviceConnectManager : MonoBehaviour
         /// </summary>
         AllSelectionCandidatesDisconnected,
         /// <summary>
-        /// 接続済みのデバイスを使用中に切断された状態
+        /// 選択したデバイスがキャリブレーション中または使用中に切断された状態
         /// </summary>
-        InUseDeviceDisconnected
+        ActiveDeviceDisconnected
     }
 
     /// <summary>
@@ -86,12 +90,12 @@ public class DeviceConnectManager : MonoBehaviour
 
     private int _detectedDeviceCount = 0; // 接続済みのデバイス数
     private int[] _selectionCandidateHandles; // 接続済みのデバイスの識別番号を格納
-    private int _inUseDeviceHandle = -1; // 選択されたデバイスの識別番号
-    public int InUseDeviceHandle
+    private int _activeDeviceHandle = -1; // 選択されたデバイスの識別番号
+    public int ActiveDeviceHandle
     {
         get
         {
-            return _inUseDeviceHandle;
+            return _activeDeviceHandle;
         }
     }
 
@@ -127,8 +131,11 @@ public class DeviceConnectManager : MonoBehaviour
             case ConnectionState.Selecting:
                 CheckSelectionCandidateConnections();
                 break;
+            case (ConnectionState.Calibrating):
+                CheckActiveDeviceConnection();
+                break;
             case ConnectionState.InUse:
-                CheckInUseDeviceConnection();
+                CheckActiveDeviceConnection();
                 break;
         }
     }
@@ -175,12 +182,12 @@ public class DeviceConnectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 使用中のデバイスの接続確認
+    /// 選択したデバイスの接続確認
     /// </summary>
-    private void CheckInUseDeviceConnection()
+    private void CheckActiveDeviceConnection()
     {
-        bool isInUseDeviceConnected = JslStillConnected(_inUseDeviceHandle);
-        if (isInUseDeviceConnected)
+        bool isActiveDeviceConnected = JslStillConnected(_activeDeviceHandle);
+        if (isActiveDeviceConnected)
         {
             return;
         }
@@ -202,10 +209,16 @@ public class DeviceConnectManager : MonoBehaviour
                     TransitionToPreparing(PreparingReason.AllSelectionCandidatesDisconnected);
                 }
                 break;
+            case (ConnectionState.Calibrating):
+                {
+                    TransitionToPreparing(PreparingReason.ActiveDeviceDisconnected);
+                    _activeDeviceHandle = -1;
+                }
+                break;
             case (ConnectionState.InUse):
                 {
-                    TransitionToPreparing(PreparingReason.InUseDeviceDisconnected);
-                    _inUseDeviceHandle = -1;
+                    TransitionToPreparing(PreparingReason.ActiveDeviceDisconnected);
+                    _activeDeviceHandle = -1;
                 }
                 break;
         }
@@ -223,7 +236,9 @@ public class DeviceConnectManager : MonoBehaviour
             case (ConnectionState.Preparing, ConnectionState.Searching):
             case (ConnectionState.Searching, ConnectionState.Selecting):
             case (ConnectionState.Searching, ConnectionState.Preparing):
-            case (ConnectionState.Selecting, ConnectionState.InUse):
+            case (ConnectionState.Selecting, ConnectionState.Calibrating):
+            case (ConnectionState.Calibrating, ConnectionState.InUse):
+            case (ConnectionState.Calibrating, ConnectionState.Preparing):
             case (ConnectionState.Selecting, ConnectionState.Preparing):
             case (ConnectionState.InUse, ConnectionState.Preparing):
                 {
@@ -245,7 +260,8 @@ public class DeviceConnectManager : MonoBehaviour
         {
             case (ConnectionState.Searching, PreparingReason.FoundNoDevices):
             case (ConnectionState.Selecting, PreparingReason.AllSelectionCandidatesDisconnected):
-            case (ConnectionState.InUse, PreparingReason.InUseDeviceDisconnected):
+            case (ConnectionState.Calibrating, PreparingReason.ActiveDeviceDisconnected):
+            case (ConnectionState.InUse, PreparingReason.ActiveDeviceDisconnected):
                 {
                     if (ChangeConnectionState(ConnectionState.Preparing))
                     {
@@ -275,8 +291,8 @@ public class DeviceConnectManager : MonoBehaviour
             case (PreparingReason.AllSelectionCandidatesDisconnected):
                 _messageText.text = "選択リストのデバイスが全て切断されました";
                 break;
-            case (PreparingReason.InUseDeviceDisconnected):
-                _messageText.text = "使用中のデバイスが切断されました";
+            case (PreparingReason.ActiveDeviceDisconnected):
+                _messageText.text = "選択したデバイスが切断されました";
                 break;
         }
     }
@@ -291,8 +307,8 @@ public class DeviceConnectManager : MonoBehaviour
         {
             return;
         }
-        _inUseDeviceHandle = decidedDeviceHandle;
-        ChangeConnectionState(ConnectionState.InUse);
+        _activeDeviceHandle = decidedDeviceHandle;
+        ChangeConnectionState(ConnectionState.Calibrating);
     }
 
     /// <summary>
@@ -315,6 +331,17 @@ public class DeviceConnectManager : MonoBehaviour
     {
         int controllerType = JslGetControllerType(deviceHandle);
         return controllerType;
+    }
+
+    /// <summary>
+    /// キャリブレーション完了後、InUse状態に移行
+    /// </summary>
+    public void CompleteCalibration()
+    {
+        if (_currentConnectionState == ConnectionState.Calibrating && JslStillConnected(_activeDeviceHandle))
+        {
+            ChangeConnectionState(ConnectionState.InUse);
+        }
     }
 
     /// <summary>

@@ -2376,7 +2376,7 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 1
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
 --- !u!114 &1183905502
@@ -2393,7 +2393,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _deviceConnectManager: {fileID: 814212697}
   _rotateSpeed: 0.5
-  _allowableValue: 0.000001
+  _rotationDeadZoneDegrees: 0.05
 --- !u!43 &1229273539
 Mesh:
   m_ObjectHideFlags: 0
@@ -2687,7 +2687,6 @@ MonoBehaviour:
   _deviceListContent: {fileID: 513690994}
   _deviceConnectManager: {fileID: 814212697}
   _deviceDetailUI: {fileID: 1522121298}
-  _deviceConnectionCanvasGroup: {fileID: 1297257762}
 --- !u!225 &1297257762
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -4925,7 +4924,7 @@ Transform:
   m_GameObject: {fileID: 2075956023}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -48}
+  m_LocalPosition: {x: 0, y: 0.5, z: -48}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4954,7 +4953,7 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 1
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
