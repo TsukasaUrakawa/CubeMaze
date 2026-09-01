@@ -7,6 +7,7 @@ public class DeviceConnectionUI : MonoBehaviour
     [SerializeField] private DeviceListItem _deviceListItemPrefab;
     [SerializeField] private RectTransform _deviceListContent;
     [SerializeField] private DeviceConnectManager _deviceConnectManager;
+    [SerializeField] private DeviceDetailUI _deviceDetailUI;
 
     /// <summary>
     /// デバイスの選択候補それぞれで行う処理
@@ -40,6 +41,7 @@ public class DeviceConnectionUI : MonoBehaviour
             DeviceListItem deviceListItem;
             deviceListItem = Instantiate(_deviceListItemPrefab, _deviceListContent);
             deviceListItem.InitializeDeviceInfo(selectionCandidateHandle, $"{displayName} {controllerTypeCounts[controllerType]}"); // 識別番号に対応したコントローラーの種別名と、同種内での番号を表示
+            deviceListItem.DeviceSelectionRequested += OnDeviceSelectionRequested;
         }
     }
 
@@ -58,13 +60,34 @@ public class DeviceConnectionUI : MonoBehaviour
         _ => "未知のコントローラー"
     };
 
+    /// <summary>
+    /// 選択を要求されたデバイスの識別番号と表示名を DeviceDetailUIへ渡す
+    /// </summary>
+    /// <param name="deviceHandle">選択を要求されたデバイスの識別番号</param>
+    /// <param name="deviceNameText">選択を要求されたデバイスのコントローラーの種別名</param>
+    private void OnDeviceSelectionRequested(int deviceHandle, string deviceNameText)
+    {
+        _deviceDetailUI.SetPendingDevice(deviceHandle, deviceNameText);
+    }
+
+    /// <summary>
+    /// デバイスの確定要求をDeviceConnectManagerへ渡す
+    /// </summary>
+    /// <param name="deviceHandle">確定を要求されたデバイスの識別番号</param>
+    private void OnDeviceConfirmationRequested(int deviceHandle)
+    {
+        _deviceConnectManager.ConfirmDeviceSelection(deviceHandle);
+    }
+
     private void OnEnable()
     {
         _deviceConnectManager.SelectionCandidatesChanged += OnSelectionCandidatesChanged;
+        _deviceDetailUI.DeviceConfirmationRequested += OnDeviceConfirmationRequested;
     }
 
     private void OnDisable()
     {
         _deviceConnectManager.SelectionCandidatesChanged -= OnSelectionCandidatesChanged;
+        _deviceDetailUI.DeviceConfirmationRequested -= OnDeviceConfirmationRequested;
     }
 }

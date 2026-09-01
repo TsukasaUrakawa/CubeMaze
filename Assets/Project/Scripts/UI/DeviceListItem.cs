@@ -15,7 +15,7 @@ public class DeviceListItem : MonoBehaviour
     /// <summary>
     /// 選択されたデバイスを渡す
     /// </summary>
-    public event Action<int> DeviceSelectionRequested;
+    public event Action<int, string> DeviceSelectionRequested;
 
     public void InitializeDeviceInfo(int deviceHandle, string deviceDisplayName)
     {
@@ -29,6 +29,6 @@ public class DeviceListItem : MonoBehaviour
     /// </summary>
     public void RequestDeviceSelection()
     {
-        DeviceSelectionRequested?.Invoke(_deviceHandle);
+        DeviceSelectionRequested?.Invoke(_deviceHandle, _deviceNameText.text);
     }
 }
