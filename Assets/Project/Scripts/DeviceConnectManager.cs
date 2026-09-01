@@ -96,9 +96,14 @@ public class DeviceConnectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 選択候補一覧の変化を他のクラスに通知
+    /// 選択候補一覧の変化を他のクラスに通知するイベント
     /// </summary>
     public event Action<IReadOnlyList<int>> SelectionCandidatesChanged;
+
+    /// <summary>
+    /// 接続状態の変化を通知するイベント
+    /// </summary>
+    public event Action<ConnectionState> ConnectionStateChanged;
 
     private void Update()
     {
@@ -223,6 +228,7 @@ public class DeviceConnectManager : MonoBehaviour
             case (ConnectionState.InUse, ConnectionState.Preparing):
                 {
                     _currentConnectionState = nextState;
+                    ConnectionStateChanged?.Invoke(nextState);
                     return true;
                 }
             default: return false;

@@ -8,6 +8,12 @@ public class DeviceConnectionUI : MonoBehaviour
     [SerializeField] private RectTransform _deviceListContent;
     [SerializeField] private DeviceConnectManager _deviceConnectManager;
     [SerializeField] private DeviceDetailUI _deviceDetailUI;
+    private CanvasGroup _deviceConnectionCanvasGroup;
+
+    private void Awake()
+    {
+        _deviceConnectionCanvasGroup = GetComponent<CanvasGroup>();
+    }
 
     /// <summary>
     /// デバイスの選択候補それぞれで行う処理
@@ -42,6 +48,26 @@ public class DeviceConnectionUI : MonoBehaviour
             deviceListItem = Instantiate(_deviceListItemPrefab, _deviceListContent);
             deviceListItem.InitializeDeviceInfo(selectionCandidateHandle, $"{displayName} {controllerTypeCounts[controllerType]}"); // 識別番号に対応したコントローラーの種別名と、同種内での番号を表示
             deviceListItem.DeviceSelectionRequested += OnDeviceSelectionRequested;
+        }
+    }
+
+    /// <summary>
+    /// 接続状態の変化時に呼ばれるメソッド
+    /// </summary>
+    /// <param name="currentConnectionState">現在の接続状態</param>
+    private void OnConnectionStateChanged(DeviceConnectManager.ConnectionState currentConnectionState)
+    {
+        if (currentConnectionState == DeviceConnectManager.ConnectionState.InUse)
+        {
+            _deviceConnectionCanvasGroup.alpha = 0;
+            _deviceConnectionCanvasGroup.interactable = false;
+            _deviceConnectionCanvasGroup.blocksRaycasts = false;
+        }
+        else
+        {
+            _deviceConnectionCanvasGroup.alpha = 1;
+            _deviceConnectionCanvasGroup.interactable = true;
+            _deviceConnectionCanvasGroup.blocksRaycasts = true;
         }
     }
 
@@ -83,11 +109,14 @@ public class DeviceConnectionUI : MonoBehaviour
     {
         _deviceConnectManager.SelectionCandidatesChanged += OnSelectionCandidatesChanged;
         _deviceDetailUI.DeviceConfirmationRequested += OnDeviceConfirmationRequested;
+        _deviceConnectManager.ConnectionStateChanged += OnConnectionStateChanged;
+        OnConnectionStateChanged(_deviceConnectManager.CurrentConnectionState);
     }
 
     private void OnDisable()
     {
         _deviceConnectManager.SelectionCandidatesChanged -= OnSelectionCandidatesChanged;
         _deviceDetailUI.DeviceConfirmationRequested -= OnDeviceConfirmationRequested;
+        _deviceConnectManager.ConnectionStateChanged -= OnConnectionStateChanged;
     }
 }
