@@ -301,6 +301,17 @@ public class DeviceConnectManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 指定したデバイスのコントローラー種別を取得
+    /// </summary>
+    /// <param name="deviceHandle">種別を調べるデバイスの識別番号</param>
+    /// <returns>JSL.ControllerTypeの各定数に対応する種別番号</returns>
+    public int GetControllerType(int deviceHandle)
+    {
+        int controllerType = JslGetControllerType(deviceHandle);
+        return controllerType;
+    }
+
+    /// <summary>
     /// ゲーム終了時にリソースを解放する
     /// </summary>
     private void OnDestroy()

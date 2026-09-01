@@ -29,6 +29,15 @@ public static class JSL
     public const int ButtonMaskSL = 18;
     public const int ButtonMaskSR = 19;
 
+    public static class ControllerType
+    {
+        public const int JoyConLeft = 1;
+        public const int JoyConRight = 2;
+        public const int ProController = 3;
+        public const int DualShock4 = 4;
+        public const int DualSense = 5;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct JOY_SHOCK_STATE
     {
