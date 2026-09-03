@@ -154,8 +154,8 @@ public class DeviceConnectManager : MonoBehaviour
         }
         else
         {
-            int[] emptyIntArray = Array.Empty<int>();
-            _selectionCandidateHandles = emptyIntArray; // 選択候補の識別番号をリセット
+            //int[] emptyIntArray = Array.Empty<int>();
+            _selectionCandidateHandles = Array.Empty<int>(); // 選択候補の識別番号をリセット
         }
     }
 
@@ -164,21 +164,13 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     private void CheckSelectionCandidateConnections()
     {
-        bool hasConnectedSelectionCandidate = false;　// 接続し続けているか判定
+        bool hasConnectedSelectionCandidates = false;　// 接続し続けているか判定
 
-        foreach (int selectionCandidateHandle in _selectionCandidateHandles)
-        {
-            // 継続した接続確認
-            if (JslStillConnected(selectionCandidateHandle))
-            {
-                hasConnectedSelectionCandidate = true;
-            }
-        }
+        // 継続した接続確認
+        _selectionCandidateHandles.ToList().ForEach(selectionCandidateHandle => hasConnectedSelectionCandidates |= JslStillConnected(selectionCandidateHandle));
 
-        if (!hasConnectedSelectionCandidate)
-        {
+        if (!hasConnectedSelectionCandidates)
             HandleDisconnection();
-        }
     }
 
     /// <summary>
