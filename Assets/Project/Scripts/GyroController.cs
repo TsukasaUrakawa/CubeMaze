@@ -87,11 +87,9 @@ public class GyroController : MonoBehaviour
                 {
                     _targetRotation.Normalize();
 
-                    float angleDifference = Quaternion.Angle(_rigidbody.rotation, _targetRotation);
-                    if (angleDifference > _rotationDeadZoneDegrees)
+                    if (Quaternion.Angle(_rigidbody.rotation, _targetRotation) > _rotationDeadZoneDegrees)
                     {
-                        Quaternion result = Quaternion.Slerp(this._rigidbody.rotation, _targetRotation, _rotateSpeed);
-                        this._rigidbody.MoveRotation(result);
+                        this._rigidbody.MoveRotation(Quaternion.Slerp(this._rigidbody.rotation, _targetRotation, _rotateSpeed));
                     }
                 }
                 break;
@@ -107,16 +105,10 @@ public class GyroController : MonoBehaviour
     {
         if (float.IsNaN(quaternion.x) || float.IsNaN(quaternion.y) || float.IsNaN(quaternion.z) || float.IsNaN(quaternion.w) ||
            float.IsInfinity(quaternion.x) || float.IsInfinity(quaternion.y) || float.IsInfinity(quaternion.z) || float.IsInfinity(quaternion.w))
-        {
             return false;
-        }
 
-        float quaternionLength = Quaternion.Dot(quaternion, quaternion); // クォータニオンの長さの二乗を計算
-
-        if (quaternionLength <= float.Epsilon)
-        {
+        if (Quaternion.Dot(quaternion, quaternion) <= float.Epsilon)
             return false;
-        }
 
         return true;
     }

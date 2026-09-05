@@ -154,7 +154,6 @@ public class DeviceConnectManager : MonoBehaviour
         }
         else
         {
-            //int[] emptyIntArray = Array.Empty<int>();
             _selectionCandidateHandles = Array.Empty<int>(); // 選択候補の識別番号をリセット
         }
     }
@@ -178,15 +177,10 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     private void CheckActiveDeviceConnection()
     {
-        bool isActiveDeviceConnected = JslStillConnected(_activeDeviceHandle);
-        if (isActiveDeviceConnected)
-        {
+        if (JslStillConnected(_activeDeviceHandle))
             return;
-        }
         else
-        {
             HandleDisconnection();
-        }
     }
 
     /// <summary>
@@ -296,9 +290,8 @@ public class DeviceConnectManager : MonoBehaviour
     public void ConfirmDeviceSelection(int decidedDeviceHandle)
     {
         if (_currentConnectionState != ConnectionState.Selecting || !_selectionCandidateHandles.Contains(decidedDeviceHandle) || !JslStillConnected(decidedDeviceHandle))
-        {
             return;
-        }
+
         _activeDeviceHandle = decidedDeviceHandle;
         ChangeConnectionState(ConnectionState.Calibrating);
     }
@@ -321,8 +314,7 @@ public class DeviceConnectManager : MonoBehaviour
     /// <returns>JSL.ControllerTypeの各定数に対応する種別番号</returns>
     public int GetControllerType(int deviceHandle)
     {
-        int controllerType = JslGetControllerType(deviceHandle);
-        return controllerType;
+        return JslGetControllerType(deviceHandle);
     }
 
     /// <summary>
@@ -331,9 +323,7 @@ public class DeviceConnectManager : MonoBehaviour
     public void CompleteCalibration()
     {
         if (_currentConnectionState == ConnectionState.Calibrating && JslStillConnected(_activeDeviceHandle))
-        {
             ChangeConnectionState(ConnectionState.InUse);
-        }
     }
 
     /// <summary>
