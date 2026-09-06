@@ -21,8 +21,7 @@ public class DeviceConnectionUI : MonoBehaviour
     /// <param name="selectionCandidates">選択候補</param>
     private void OnSelectionCandidatesChanged(IReadOnlyList<int> selectionCandidates)
     {
-        int childCount = _deviceListContent.childCount; // Contentの子オブジェクトの総数を保存
-        for (int i = 0; i < childCount; i++) // Contentの子オブジェクトを一つずつ削除
+        for (int i = 0; i < _deviceListContent.childCount; i++) // Contentの子オブジェクトを一つずつ削除
         {
             Transform child = _deviceListContent.GetChild(i);
             Destroy(child.gameObject);

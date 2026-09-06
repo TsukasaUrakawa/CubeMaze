@@ -31,9 +31,7 @@ public class DeviceDetailUI : MonoBehaviour
     public void RequestDeviceConfirmation()
     {
         if (_pendingDeviceHandle == -1)
-        {
             return;
-        }
 
         DeviceConfirmationRequested?.Invoke(_pendingDeviceHandle);
     }
