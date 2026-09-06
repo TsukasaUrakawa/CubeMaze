@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using static JSL;
 
@@ -27,8 +28,6 @@ public class GyroTest : MonoBehaviour
     private bool _isStartedCalibration = false;
 
     private bool _isCalibrationCompleted = false;
-
-    private float _calibrationElapsedTime = 0f;
 
     void Start()
     {
@@ -62,49 +61,33 @@ public class GyroTest : MonoBehaviour
             {
                 _targetRotation.Normalize();
 
-                if (!_isStartedCalibration)
+                if (!_isStartedCalibration) 
                 {
-                    _calibrationElapsedTime = 0f;
-                    JslResetContinuousCalibration(_deviceConnectTest.ActiveDeviceHandle);
-                    JslStartContinuousCalibration(_deviceConnectTest.ActiveDeviceHandle);
-                    _isStartedCalibration = true;
-                }
-
-                if (!_isCalibrationCompleted)
-                {
-                    _calibrationElapsedTime += Time.fixedDeltaTime;
-                }
-
-                if (_calibrationElapsedTime > 5f && !_isCalibrationCompleted)
-                {
-                    JslPauseContinuousCalibration(_deviceConnectTest.ActiveDeviceHandle);
-
-                    _isCalibrationCompleted = true;
-
-                    _calibrationReferenceRotation = _targetRotation;
-                    _mazeReferenceRotation = _rigidbody.rotation;
+                    StartCoroutine(CalibrationCoroutine());
                 }
 
                 if (!_isCalibrationCompleted)
                 {
                     return;
                 }
-
-                Quaternion relativeRotation = Quaternion.Inverse(_calibrationReferenceRotation) * _targetRotation;
-                Vector3 r = new Vector3(relativeRotation.x, relativeRotation.y, relativeRotation.z);
-                Vector3 p = Vector3.Project(r, twistAxis);
-                twist = new Quaternion(p.x, p.y, p.z, relativeRotation.w);
-
-                if (p.sqrMagnitude < float.Epsilon)
-                {
-                    twist = Quaternion.identity;
-                    swing = relativeRotation;
-                }
-
                 else
                 {
-                    twist.Normalize();
-                    swing = relativeRotation * Quaternion.Inverse(twist);
+                    Quaternion relativeRotation = Quaternion.Inverse(_calibrationReferenceRotation) * _targetRotation;
+                    Vector3 r = new Vector3(relativeRotation.x, relativeRotation.y, relativeRotation.z);
+                    Vector3 p = Vector3.Project(r, twistAxis);
+                    twist = new Quaternion(p.x, p.y, p.z, relativeRotation.w);
+
+                    if (p.sqrMagnitude < float.Epsilon)
+                    {
+                        twist = Quaternion.identity;
+                        swing = relativeRotation;
+                    }
+
+                    else
+                    {
+                        twist.Normalize();
+                        swing = relativeRotation * Quaternion.Inverse(twist);
+                    }
                 }
             }
             else
@@ -126,6 +109,36 @@ public class GyroTest : MonoBehaviour
         else
         {
             return;
+        }
+    }
+
+    IEnumerator CalibrationCoroutine()
+    {
+        if (!_isStartedCalibration)
+        {
+            JslResetContinuousCalibration(_deviceConnectTest.ActiveDeviceHandle);
+            JslStartContinuousCalibration(_deviceConnectTest.ActiveDeviceHandle);
+            _isStartedCalibration = true;
+        }
+
+        if (!_isCalibrationCompleted)
+        {
+            yield return new WaitForSeconds(5f);
+        }
+
+        if (!_deviceConnectTest.HasActiveDevice)
+        {
+            yield break;
+        }
+
+        if (!_isCalibrationCompleted)
+        {
+            JslPauseContinuousCalibration(_deviceConnectTest.ActiveDeviceHandle);
+
+            _isCalibrationCompleted = true;
+
+            _calibrationReferenceRotation = _targetRotation;
+            _mazeReferenceRotation = _rigidbody.rotation;
         }
     }
 
