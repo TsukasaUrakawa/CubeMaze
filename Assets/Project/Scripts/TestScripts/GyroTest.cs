@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using static JSL;
 
@@ -16,11 +15,10 @@ public class GyroTest : MonoBehaviour
     [SerializeField] private float _rotationDeadZoneDegrees = 0.05f;
     private Rigidbody _rigidbody;
 
-    private Vector3 _calibrationReferenceUp = Vector3.zero;
-
     private Quaternion _calibrationReferenceRotation = Quaternion.identity;
 
     private Quaternion _mazeReferenceRotation = Quaternion.identity;
+
 
     /// <summary>
     /// コントローラーから取得した姿勢をUnity用に変換した目標回転
@@ -52,6 +50,12 @@ public class GyroTest : MonoBehaviour
 
     private void FixedUpdate()
     {
+        Vector3 twistAxis = Vector3.up;
+
+        Quaternion swing = Quaternion.identity;
+
+        Quaternion twist = Quaternion.identity;
+
         if (_deviceConnectTest.HasActiveDevice)
         {
             if (IsValid(_targetRotation))
@@ -74,28 +78,45 @@ public class GyroTest : MonoBehaviour
                 if (_calibrationElapsedTime > 5f && !_isCalibrationCompleted)
                 {
                     JslPauseContinuousCalibration(_deviceConnectTest.ActiveDeviceHandle);
-                    _calibrationReferenceRotation = _targetRotation;
-                    _calibrationReferenceUp = _calibrationReferenceRotation * Vector3.up;
-                    _mazeReferenceRotation = _rigidbody.rotation;
 
-                    float angle = Quaternion.Angle(this._rigidbody.rotation, _targetRotation);
-                    Debug.Log(angle);
                     _isCalibrationCompleted = true;
+
+                    _calibrationReferenceRotation = _targetRotation;
+                    _mazeReferenceRotation = _rigidbody.rotation;
                 }
 
                 if (!_isCalibrationCompleted)
                 {
                     return;
                 }
+
+                Quaternion relativeRotation = Quaternion.Inverse(_calibrationReferenceRotation) * _targetRotation;
+                Vector3 r = new Vector3(relativeRotation.x, relativeRotation.y, relativeRotation.z);
+                Vector3 p = Vector3.Project(r, twistAxis);
+                twist = new Quaternion(p.x, p.y, p.z, relativeRotation.w);
+
+                if (p.sqrMagnitude < float.Epsilon)
+                {
+                    twist = Quaternion.identity;
+                    swing = relativeRotation;
+                }
+
+                else
+                {
+                    twist.Normalize();
+                    swing = relativeRotation * Quaternion.Inverse(twist);
+                }
+            }
+            else
+            {
+                return;
             }
 
-            Quaternion relativeCalibrationRotation = Quaternion.Inverse(_calibrationReferenceRotation) * _targetRotation;
-            Quaternion adjustedRotation = _mazeReferenceRotation * relativeCalibrationRotation;
+
+            Quaternion adjustedRotation = _mazeReferenceRotation * swing;
 
             if (IsValid(adjustedRotation))
             {
-                adjustedRotation.Normalize();
-
                 if (Quaternion.Angle(_rigidbody.rotation, adjustedRotation) > _rotationDeadZoneDegrees)
                 {
                     this._rigidbody.MoveRotation(Quaternion.Slerp(this._rigidbody.rotation, adjustedRotation, _rotateSpeed));

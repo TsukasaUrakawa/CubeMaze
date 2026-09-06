@@ -2507,7 +2507,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _deviceConnectTest: {fileID: 619550188}
   _rotateSpeed: 0.3
-  _rotationDeadZoneDegrees: 2
+  _rotationDeadZoneDegrees: 1
 --- !u!43 &1365553656
 Mesh:
   m_ObjectHideFlags: 0
