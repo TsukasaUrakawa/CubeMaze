@@ -522,17 +522,9 @@ MonoBehaviour:
   m_Mesh: {fileID: 0}
   m_VersionIndex: 211
   m_IsSelectable: 1
-  m_SelectedFaces: 07000000
-  m_SelectedEdges:
-  - a: 30
-    b: 31
-  - a: 31
-    b: 28
-  - a: 29
-    b: 30
-  - a: 28
-    b: 29
-  m_SelectedVertices: 1e0000001f0000001c0000001d000000
+  m_SelectedFaces: 
+  m_SelectedEdges: []
+  m_SelectedVertices: 
 --- !u!114 &524002682182081303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -617,7 +609,7 @@ MeshCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2258005124285891225}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e624cb7574c65e041a09883f9acec273, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
