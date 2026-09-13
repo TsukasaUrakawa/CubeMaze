@@ -36,6 +36,8 @@ public class GyroTest : MonoBehaviour
     private int _buttonMaskLeft = 1 << ButtonMaskLeft;
     private int _buttonMaskRight = 1 << ButtonMaskRight;
 
+    private bool _isStepRotating = false;
+
     void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
@@ -48,21 +50,24 @@ public class GyroTest : MonoBehaviour
             MOTION_STATE motion = JslGetMotionState(_deviceConnectTest.ActiveDeviceHandle); // 使用中のデバイスの識別番号からモーションステートを取得
             _targetRotation = new Quaternion(motion.quatX, -motion.quatY, -motion.quatZ, motion.quatW);
             JOY_SHOCK_STATE state = JslGetSimpleState(_deviceConnectTest.ActiveDeviceHandle);
-            if (_isCalibrationCompleted && (state.buttons & _buttonMaskUp) != 0 && (_previousButtons & _buttonMaskUp) == 0)
+            if (!_isStepRotating)
             {
-                RotateMazeReference(Vector3.right, 90f);
-            }
-            if (_isCalibrationCompleted && (state.buttons & _buttonMaskDown) != 0 && (_previousButtons & _buttonMaskDown) == 0)
-            {
-                RotateMazeReference(Vector3.right, -90f);
-            }
-            if (_isCalibrationCompleted && (state.buttons & _buttonMaskLeft) != 0 && (_previousButtons & _buttonMaskLeft) == 0)
-            {
-                RotateMazeReference(Vector3.forward, 90f);
-            }
-            if (_isCalibrationCompleted && (state.buttons & _buttonMaskRight) != 0 && (_previousButtons & _buttonMaskRight) == 0)
-            {
-                RotateMazeReference(Vector3.forward, -90f);
+                if (_isCalibrationCompleted && (state.buttons & _buttonMaskUp) != 0 && (_previousButtons & _buttonMaskUp) == 0)
+                {
+                    RotateMazeReference(Vector3.right, 90f);
+                }
+                else if (_isCalibrationCompleted && (state.buttons & _buttonMaskDown) != 0 && (_previousButtons & _buttonMaskDown) == 0)
+                {
+                    RotateMazeReference(Vector3.right, -90f);
+                }
+                else if (_isCalibrationCompleted && (state.buttons & _buttonMaskLeft) != 0 && (_previousButtons & _buttonMaskLeft) == 0)
+                {
+                    RotateMazeReference(Vector3.forward, 90f);
+                }
+                else if (_isCalibrationCompleted && (state.buttons & _buttonMaskRight) != 0 && (_previousButtons & _buttonMaskRight) == 0)
+                {
+                    RotateMazeReference(Vector3.forward, -90f);
+                }
             }
             _previousButtons = state.buttons;
         }
@@ -129,6 +134,10 @@ public class GyroTest : MonoBehaviour
                 {
                     this._rigidbody.MoveRotation(Quaternion.Slerp(this._rigidbody.rotation, adjustedRotation, _rotateSpeed));
                 }
+                else
+                {
+                    _isStepRotating = false;
+                }
             }
         }
         else
@@ -182,6 +191,7 @@ public class GyroTest : MonoBehaviour
     private void RotateMazeReference(Vector3 axis, float angle)
     {
         _mazeReferenceRotation =  Quaternion.AngleAxis(angle, axis) * _mazeReferenceRotation;
+        _isStepRotating = true;
     }
 }
 
