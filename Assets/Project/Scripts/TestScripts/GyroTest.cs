@@ -29,6 +29,13 @@ public class GyroTest : MonoBehaviour
 
     private bool _isCalibrationCompleted = false;
 
+    private int _previousButtons = 0;
+
+    private int _buttonMaskUp = 1 << ButtonMaskUp;
+    private int _buttonMaskDown = 1 << ButtonMaskDown;
+    private int _buttonMaskLeft = 1 << ButtonMaskLeft;
+    private int _buttonMaskRight = 1 << ButtonMaskRight;
+
     void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
@@ -40,6 +47,24 @@ public class GyroTest : MonoBehaviour
         {
             MOTION_STATE motion = JslGetMotionState(_deviceConnectTest.ActiveDeviceHandle); // 使用中のデバイスの識別番号からモーションステートを取得
             _targetRotation = new Quaternion(motion.quatX, -motion.quatY, -motion.quatZ, motion.quatW);
+            JOY_SHOCK_STATE state = JslGetSimpleState(_deviceConnectTest.ActiveDeviceHandle);
+            if (_isCalibrationCompleted && (state.buttons & _buttonMaskUp) != 0 && (_previousButtons & _buttonMaskUp) == 0)
+            {
+                RotateMazeReference(Vector3.right, 90f);
+            }
+            if (_isCalibrationCompleted && (state.buttons & _buttonMaskDown) != 0 && (_previousButtons & _buttonMaskDown) == 0)
+            {
+                RotateMazeReference(Vector3.right, -90f);
+            }
+            if (_isCalibrationCompleted && (state.buttons & _buttonMaskLeft) != 0 && (_previousButtons & _buttonMaskLeft) == 0)
+            {
+                RotateMazeReference(Vector3.forward, 90f);
+            }
+            if (_isCalibrationCompleted && (state.buttons & _buttonMaskRight) != 0 && (_previousButtons & _buttonMaskRight) == 0)
+            {
+                RotateMazeReference(Vector3.forward, -90f);
+            }
+            _previousButtons = state.buttons;
         }
         else
         {
@@ -96,7 +121,7 @@ public class GyroTest : MonoBehaviour
             }
 
 
-            Quaternion adjustedRotation = _mazeReferenceRotation * swing;
+            Quaternion adjustedRotation = swing * _mazeReferenceRotation;
 
             if (IsValid(adjustedRotation))
             {
@@ -152,6 +177,11 @@ public class GyroTest : MonoBehaviour
             return false;
 
         return true;
+    }
+
+    private void RotateMazeReference(Vector3 axis, float angle)
+    {
+        _mazeReferenceRotation =  Quaternion.AngleAxis(angle, axis) * _mazeReferenceRotation;
     }
 }
 
