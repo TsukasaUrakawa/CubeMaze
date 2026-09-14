@@ -38,6 +38,13 @@ public class GyroTest : MonoBehaviour
 
     private bool _isStepRotating = false;
 
+    private Quaternion _stepStartRotation = Quaternion.identity;
+    private Quaternion _stepTargetRotation = Quaternion.identity;
+    [SerializeField] private float _stepRotationDuration = 1.0f;
+    private float _stepRotationElapsedTime = 0.0f;
+
+    private Quaternion _smoothedGyroRotation = Quaternion.identity;
+
     void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
@@ -91,7 +98,7 @@ public class GyroTest : MonoBehaviour
             {
                 _targetRotation.Normalize();
 
-                if (!_isStartedCalibration) 
+                if (!_isStartedCalibration)
                 {
                     StartCoroutine(CalibrationCoroutine());
                 }
@@ -125,19 +132,27 @@ public class GyroTest : MonoBehaviour
                 return;
             }
 
+            if (_isStepRotating)
+            {
+                _stepRotationElapsedTime += Time.fixedDeltaTime;
+                float progressionRate = _stepRotationElapsedTime / _stepRotationDuration;
+                _mazeReferenceRotation = Quaternion.Slerp(_stepStartRotation, _stepTargetRotation, progressionRate);
+                if (progressionRate >= 1)
+                {
+                    _mazeReferenceRotation = _stepTargetRotation;
+                    _isStepRotating = false;
+                }
+            }
 
-            Quaternion adjustedRotation = swing * _mazeReferenceRotation;
+            if (Quaternion.Angle(_smoothedGyroRotation, swing) > _rotationDeadZoneDegrees)
+            {
+                _smoothedGyroRotation = Quaternion.Slerp(_smoothedGyroRotation, swing, _rotateSpeed);
+            }
+            Quaternion adjustedRotation = _smoothedGyroRotation * _mazeReferenceRotation;
 
             if (IsValid(adjustedRotation))
             {
-                if (Quaternion.Angle(_rigidbody.rotation, adjustedRotation) > _rotationDeadZoneDegrees)
-                {
-                    this._rigidbody.MoveRotation(Quaternion.Slerp(this._rigidbody.rotation, adjustedRotation, _rotateSpeed));
-                }
-                else
-                {
-                    _isStepRotating = false;
-                }
+                this._rigidbody.MoveRotation(adjustedRotation);
             }
         }
         else
@@ -190,7 +205,9 @@ public class GyroTest : MonoBehaviour
 
     private void RotateMazeReference(Vector3 axis, float angle)
     {
-        _mazeReferenceRotation =  Quaternion.AngleAxis(angle, axis) * _mazeReferenceRotation;
+        _stepStartRotation = _mazeReferenceRotation;
+        _stepTargetRotation = Quaternion.AngleAxis(angle, axis) * _mazeReferenceRotation;
+        _stepRotationElapsedTime = 0.0f;
         _isStepRotating = true;
     }
 }
