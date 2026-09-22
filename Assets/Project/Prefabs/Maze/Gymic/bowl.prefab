@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3973765853911853021}
   m_Layer: 0
-  m_Name: bowl
+  m_Name: Bowl
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 5084156196440464956}
   - component: {fileID: 2213145856691463418}
   - component: {fileID: 7092181601755283800}
+  - component: {fileID: 1535406945471918824}
   m_Layer: 0
   m_Name: Mesh
   m_TagString: Untagged
@@ -89,7 +90,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: db66224d5e321d44bb3ab6b03fd6832e, type: 2}
+  - {fileID: 2100000, guid: 2891a4a1ab11ab740a6aea4911daa285, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -18984,4 +18985,26 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7689482442932847545}
+  m_Mesh: {fileID: 0}
+--- !u!64 &1535406945471918824
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7689482442932847545}
+  m_Material: {fileID: 13400000, guid: e624cb7574c65e041a09883f9acec273, type: 2}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
   m_Mesh: {fileID: 0}
