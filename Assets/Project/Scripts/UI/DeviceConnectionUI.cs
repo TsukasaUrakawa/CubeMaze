@@ -8,6 +8,7 @@ public class DeviceConnectionUI : MonoBehaviour
     [SerializeField] private RectTransform _deviceListContent;
     [SerializeField] private DeviceConnectManager _deviceConnectManager;
     [SerializeField] private DeviceDetailUI _deviceDetailUI;
+    [SerializeField] private Animator _calibrationAnimator;
     private CanvasGroup _deviceConnectionCanvasGroup;
 
     private void Awake()
@@ -56,6 +57,11 @@ public class DeviceConnectionUI : MonoBehaviour
     /// <param name="currentConnectionState">現在の接続状態</param>
     private void OnConnectionStateChanged(DeviceConnectManager.ConnectionState currentConnectionState)
     {
+        _calibrationAnimator.gameObject.SetActive(currentConnectionState == DeviceConnectManager.ConnectionState.Calibrating);
+        if (currentConnectionState == DeviceConnectManager.ConnectionState.Calibrating)
+        {
+            _calibrationAnimator.Play("Base Layer.CalibrationLoading", 0, 0f);
+        }
         if (currentConnectionState == DeviceConnectManager.ConnectionState.InUse)
         {
             _deviceConnectionCanvasGroup.alpha = 0;
