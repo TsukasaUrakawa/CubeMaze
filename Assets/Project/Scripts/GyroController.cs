@@ -27,6 +27,10 @@ public class GyroController : MonoBehaviour
 
     private float _calibrationElapsedTime = 0f;
 
+    private Quaternion _calibrationReferenceRotation = Quaternion.identity;
+    private Quaternion _mazeReferenceRotation = Quaternion.identity;
+    private Quaternion _smoothGyroRotation = Quaternion.identity;
+
     void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
@@ -73,6 +77,8 @@ public class GyroController : MonoBehaviour
                     {
                         JslPauseContinuousCalibration(_deviceConnectManager.ActiveDeviceHandle);
                         _isCalibrationCompleted = true;
+                        _calibrationReferenceRotation = _targetRotation;
+                        _mazeReferenceRotation = _rigidbody.rotation;
                         _deviceConnectManager.CompleteCalibration();
                     }
 
@@ -86,10 +92,31 @@ public class GyroController : MonoBehaviour
                 if (IsValid(_targetRotation))
                 {
                     _targetRotation.Normalize();
-
-                    if (Quaternion.Angle(_rigidbody.rotation, _targetRotation) > _rotationDeadZoneDegrees)
+                    Quaternion relativeRotation = Quaternion.Inverse(_calibrationReferenceRotation) * _targetRotation;
+                    Vector3 twistAxis = Vector3.up;
+                    Vector3 r = new Vector3(relativeRotation.x, relativeRotation.y, relativeRotation.z);
+                    Vector3 p = Vector3.Project(r, twistAxis);
+                    Quaternion twist = new Quaternion(p.x, p.y, p.z, relativeRotation.w);
+                    Quaternion swing = Quaternion.identity;
+                    if (Quaternion.Dot(twist, twist) < float.Epsilon)
                     {
-                        this._rigidbody.MoveRotation(Quaternion.Slerp(this._rigidbody.rotation, _targetRotation, _rotateSpeed));
+                        twist = Quaternion.identity;
+                        swing = relativeRotation;
+                    }
+                    else
+                    {
+                        twist.Normalize();
+                        swing = relativeRotation * Quaternion.Inverse(twist);
+                    }
+
+                    if (Quaternion.Angle(_smoothGyroRotation, swing) > _rotationDeadZoneDegrees)
+                    {
+                        _smoothGyroRotation = Quaternion.Slerp(_smoothGyroRotation, swing, _rotateSpeed);
+                    }
+                    Quaternion adjustedRotation = _smoothGyroRotation * _mazeReferenceRotation;
+                    if (IsValid(adjustedRotation))
+                    {
+                        this._rigidbody.MoveRotation(adjustedRotation);
                     }
                 }
                 break;
