@@ -70,6 +70,11 @@ public class GyroController : MonoBehaviour
         }
     }
 
+    private Quaternion _initialCalibrationRotation = Quaternion.identity;
+    private Quaternion _initialMazeRotation = Quaternion.identity;
+
+    private bool _isSavedInitialRotation = false;
+
     void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
@@ -170,6 +175,12 @@ public class GyroController : MonoBehaviour
                         _mazeReferenceRotation = _rigidbody.rotation;
                         _smoothGyroRotation = Quaternion.identity;
                         _deviceConnectManager.CompleteCalibration();
+                        if (!_isSavedInitialRotation)
+                        {
+                            _initialCalibrationRotation = _calibrationReferenceRotation;
+                            _initialMazeRotation = _mazeReferenceRotation;
+                            _isSavedInitialRotation = true;
+                        }
                     }
 
                     if (!_isCalibrationCompleted)
@@ -264,6 +275,26 @@ public class GyroController : MonoBehaviour
         _smoothGyroRotation = Quaternion.identity;
         _stepRotationElapsedTime = 0f;
         _isStepRotating = true;
+    }
+
+    public void ResetForRespawn()
+    {
+        if (!_isSavedInitialRotation)
+        {
+            return;
+        }
+        else
+        {
+            _calibrationReferenceRotation = _initialCalibrationRotation;
+            _mazeReferenceRotation = _initialMazeRotation;
+            _smoothGyroRotation = Quaternion.identity;
+            _controllReferenceRotation = Quaternion.identity;
+            _isStepRotating = false;
+            _isReturningToReference = false;
+            _isViewing = false;
+            _stepRotationElapsedTime = 0f;
+            _rigidbody.rotation = _initialMazeRotation;
+        }
     }
 
     private bool IsValid(Quaternion quaternion)
