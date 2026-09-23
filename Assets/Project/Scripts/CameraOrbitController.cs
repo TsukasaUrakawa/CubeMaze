@@ -4,13 +4,27 @@ using static JSL;
 
 public class CameraOrbitController : MonoBehaviour
 {
-    [SerializeField] DeviceConnectTest _deviceConnectTest;
-
-    [SerializeField] private float _rStickDeadZone = 0.025f;
+    [SerializeField] private DeviceConnectManager _deviceConnectManager;
+    [SerializeField] private GyroController _gyroController;
 
     private CinemachineOrbitalFollow _orbitalFollow;
 
-    [SerializeField] private float _rotateSpeed = 5f;
+    private int _previousButtons = 0;
+    private int _buttonMaskL = 1 << ButtonMaskL;
+    private int _buttonMaskR = 1 << ButtonMaskR;
+
+    private bool _isRotating = false;
+    public bool IsRotating
+    {
+        get
+        {
+            return _isRotating;
+        }
+    }
+    private float _startAngle = 0f;
+    private float _targetAngle = 0f;
+    private float _rotationElapsedTime = 0f;
+    [SerializeField, Range(1f, 3f)] private float _rotationDuration = 1f;
 
     void Awake()
     {
@@ -19,19 +33,48 @@ public class CameraOrbitController : MonoBehaviour
 
     void Update()
     {
-        if (!_deviceConnectTest.HasActiveDevice)
+        if (_deviceConnectManager.CurrentConnectionState != DeviceConnectManager.ConnectionState.InUse)
         {
             return;
         }
         else
         {
-            JOY_SHOCK_STATE state = JslGetSimpleState(_deviceConnectTest.ActiveDeviceHandle);
-            Vector2 rStick = new Vector2(state.stickRX, state.stickRY);
-            float magnitude = rStick.magnitude;
-            if (magnitude > _rStickDeadZone)
+            JOY_SHOCK_STATE state = JslGetSimpleState(_deviceConnectManager.ActiveDeviceHandle);
+            if (_gyroController.IsViewing)
             {
-                _orbitalFollow.HorizontalAxis.Value = _orbitalFollow.HorizontalAxis.ClampValue(_orbitalFollow.HorizontalAxis.Value + -rStick.x * _rotateSpeed * Time.deltaTime);
+                if ((state.buttons & _buttonMaskL) != 0 && (_previousButtons & _buttonMaskL) == 0)
+                {
+                    StartRotation(-90f);
+                }
+                else if ((state.buttons & _buttonMaskR) != 0 && (_previousButtons & _buttonMaskR) == 0)
+                {
+                    StartRotation(90f);
+                }
+            }
+            _previousButtons = state.buttons;
+            if (_isRotating)
+            {
+                _rotationElapsedTime += Time.deltaTime;
+                float progress = _rotationElapsedTime / _rotationDuration;
+                float currentAngle = Mathf.Lerp(_startAngle, _targetAngle, progress);
+                _orbitalFollow.HorizontalAxis.Value = _orbitalFollow.HorizontalAxis.ClampValue(currentAngle);
+                if (progress >= 1)
+                {
+                    _isRotating = false;
+                }
             }
         }
+    }
+
+    private void StartRotation(float angle)
+    {
+        if (_isRotating)
+        {
+            return;
+        }
+        _startAngle = _orbitalFollow.HorizontalAxis.Value;
+        _targetAngle = _startAngle + angle;
+        _rotationElapsedTime = 0f;
+        _isRotating = true;
     }
 }

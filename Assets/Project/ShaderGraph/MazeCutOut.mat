@@ -42,11 +42,11 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BallDepth: 7.471368
+    - _BallDepth: 16.216988
     - _QueueControl: 0
     - _QueueOffset: 0
     m_Colors:
-    - _HoleCenter: {r: 0.4972243, g: 0.5011814, b: 0, a: 0}
+    - _HoleCenter: {r: 0.52020305, g: 0.14887866, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &1192305301048765908

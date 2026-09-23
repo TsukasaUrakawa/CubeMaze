@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using static JSL;
 
@@ -10,6 +11,10 @@ public class GyroController : MonoBehaviour
     /// 使用中のデバイスの識別番号と接続状態を取得する
     /// </summary>
     [SerializeField] private DeviceConnectManager _deviceConnectManager;
+
+    [SerializeField] private CameraOrbitController _cameraOrbitController;
+    [SerializeField] private Transform _cameraTransform;
+
     /// <summary>
     /// 現在の回転からコントローラーの姿勢へ補間するときの割合
     /// </summary>
@@ -31,6 +36,31 @@ public class GyroController : MonoBehaviour
     private Quaternion _mazeReferenceRotation = Quaternion.identity;
     private Quaternion _smoothGyroRotation = Quaternion.identity;
 
+    private bool _isStepRotating = false;
+    private Quaternion _stepStartRotation = Quaternion.identity;
+    private Quaternion _stepTargetRotation = Quaternion.identity;
+
+    private Quaternion _controllReferenceRotation = Quaternion.identity;
+    private float _stepRotationElapsedTime = 0f;
+    [SerializeField] private float _stepRotationDuration = 1f;
+
+    private int _previousButtons = 0;
+    private int _buttonMaskUp = 1 << ButtonMaskUp;
+    private int _buttonMaskDown = 1 << ButtonMaskDown;
+    private int _buttonMaskLeft = 1 << ButtonMaskLeft;
+    private int _buttonMaskRight = 1 << ButtonMaskRight;
+    private int _buttonMaskX = 1 << ButtonMaskN;
+    private int _buttonMaskY = 1 << ButtonMaskW;
+
+    private bool _isViewing = false;
+    public bool IsViewing
+    {
+        get
+        {
+            return _isViewing;
+        }
+    }
+
     void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
@@ -45,6 +75,54 @@ public class GyroController : MonoBehaviour
                 MOTION_STATE motion = JslGetMotionState(_deviceConnectManager.ActiveDeviceHandle); // 使用中のデバイスの識別番号からモーションステートを取得
 
                 _targetRotation = new Quaternion(motion.quatX, -motion.quatY, -motion.quatZ, motion.quatW);
+                JOY_SHOCK_STATE state = JslGetSimpleState(_deviceConnectManager.ActiveDeviceHandle);
+                if (!_isStepRotating && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse)
+                {
+                    if (!_isViewing)
+                    {
+                        if ((state.buttons & _buttonMaskX) != 0 && (_previousButtons & _buttonMaskX) == 0)
+                        {
+                            _mazeReferenceRotation = _rigidbody.rotation;
+                            _smoothGyroRotation = Quaternion.identity;
+                            _isViewing = true;
+                        }
+                        else
+                        {
+                            if ((state.buttons & _buttonMaskUp) != 0 && (_previousButtons & _buttonMaskUp) == 0)
+                            {
+                                RotateMazeReference(Vector3.right, 90f);
+                            }
+                            if ((state.buttons & _buttonMaskDown) != 0 && (_previousButtons & _buttonMaskDown) == 0)
+                            {
+                                RotateMazeReference(Vector3.right, -90f);
+                            }
+                            if ((state.buttons & _buttonMaskLeft) != 0 && (_previousButtons & _buttonMaskLeft) == 0)
+                            {
+                                RotateMazeReference(Vector3.forward, 90f);
+                            }
+                            if ((state.buttons & _buttonMaskRight) != 0 && (_previousButtons & _buttonMaskRight) == 0)
+                            {
+                                RotateMazeReference(Vector3.forward, -90f);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!_cameraOrbitController.IsRotating && (state.buttons & _buttonMaskY) != 0 && (_previousButtons & _buttonMaskY) == 0)
+                        {
+                            Vector3 horizontalForward = Vector3.ProjectOnPlane(_cameraTransform.forward, Vector3.up);
+                            if (horizontalForward.sqrMagnitude > 0.000001f && IsValid(_targetRotation))
+                            {
+                                _controllReferenceRotation = Quaternion.LookRotation(horizontalForward, Vector3.up);
+                                _targetRotation.Normalize();
+                                _calibrationReferenceRotation = _targetRotation;
+                                _smoothGyroRotation = Quaternion.identity;
+                                _isViewing = false;
+                            }
+                        }
+                    }
+                }
+                _previousButtons = state.buttons;
                 break;
             default:
                 break;
@@ -79,6 +157,7 @@ public class GyroController : MonoBehaviour
                         _isCalibrationCompleted = true;
                         _calibrationReferenceRotation = _targetRotation;
                         _mazeReferenceRotation = _rigidbody.rotation;
+                        _smoothGyroRotation = Quaternion.identity;
                         _deviceConnectManager.CompleteCalibration();
                     }
 
@@ -92,27 +171,43 @@ public class GyroController : MonoBehaviour
                 if (IsValid(_targetRotation))
                 {
                     _targetRotation.Normalize();
-                    Quaternion relativeRotation = Quaternion.Inverse(_calibrationReferenceRotation) * _targetRotation;
-                    Vector3 twistAxis = Vector3.up;
-                    Vector3 r = new Vector3(relativeRotation.x, relativeRotation.y, relativeRotation.z);
-                    Vector3 p = Vector3.Project(r, twistAxis);
-                    Quaternion twist = new Quaternion(p.x, p.y, p.z, relativeRotation.w);
-                    Quaternion swing = Quaternion.identity;
-                    if (Quaternion.Dot(twist, twist) < float.Epsilon)
+                    if (_isStepRotating)
                     {
-                        twist = Quaternion.identity;
-                        swing = relativeRotation;
+                        _stepRotationElapsedTime += Time.fixedDeltaTime;
+                        float progress = _stepRotationElapsedTime / _stepRotationDuration;
+                        _mazeReferenceRotation = Quaternion.Slerp(_stepStartRotation, _stepTargetRotation, progress);
+                        if (progress >= 1)
+                        {
+                            _mazeReferenceRotation = _stepTargetRotation;
+                            _calibrationReferenceRotation = _targetRotation;
+                            _isStepRotating = false;
+                        }
                     }
-                    else
+                    else if (!_isViewing)
                     {
-                        twist.Normalize();
-                        swing = relativeRotation * Quaternion.Inverse(twist);
+                        Quaternion relativeRotation = Quaternion.Inverse(_calibrationReferenceRotation) * _targetRotation;
+                        Vector3 twistAxis = Vector3.up;
+                        Vector3 r = new Vector3(relativeRotation.x, relativeRotation.y, relativeRotation.z);
+                        Vector3 p = Vector3.Project(r, twistAxis);
+                        Quaternion twist = new Quaternion(p.x, p.y, p.z, relativeRotation.w);
+                        Quaternion swing = Quaternion.identity;
+                        if (Quaternion.Dot(twist, twist) < float.Epsilon)
+                        {
+                            twist = Quaternion.identity;
+                            swing = relativeRotation;
+                        }
+                        else
+                        {
+                            twist.Normalize();
+                            swing = relativeRotation * Quaternion.Inverse(twist);
+                        }
+                        if (Quaternion.Angle(_smoothGyroRotation, swing) > _rotationDeadZoneDegrees)
+                        {
+                            _smoothGyroRotation = Quaternion.Slerp(_smoothGyroRotation, swing, _rotateSpeed);
+                        }
                     }
 
-                    if (Quaternion.Angle(_smoothGyroRotation, swing) > _rotationDeadZoneDegrees)
-                    {
-                        _smoothGyroRotation = Quaternion.Slerp(_smoothGyroRotation, swing, _rotateSpeed);
-                    }
+
                     Quaternion adjustedRotation = _smoothGyroRotation * _mazeReferenceRotation;
                     if (IsValid(adjustedRotation))
                     {
@@ -123,9 +218,24 @@ public class GyroController : MonoBehaviour
             default:
                 _isStartedCalibration = false;
                 _isCalibrationCompleted = false;
+                _isStepRotating = false;
                 _calibrationElapsedTime = 0f;
+                _stepRotationElapsedTime = 0f;
                 break;
         }
+    }
+
+    private void RotateMazeReference(Vector3 axis, float angle)
+    {
+        if (_isStepRotating)
+        {
+            return;
+        }
+        _stepStartRotation = _rigidbody.rotation;
+        _stepTargetRotation = Quaternion.AngleAxis(angle, axis) * _mazeReferenceRotation;
+        _smoothGyroRotation = Quaternion.identity;
+        _stepRotationElapsedTime = 0f;
+        _isStepRotating = true;
     }
 
     private bool IsValid(Quaternion quaternion)
