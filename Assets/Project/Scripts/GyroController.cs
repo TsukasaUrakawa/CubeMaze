@@ -61,6 +61,15 @@ public class GyroController : MonoBehaviour
         }
     }
 
+    private bool _isReturningToReference = false;
+    public bool IsReturningToReference
+    {
+        get
+        {
+            return _isReturningToReference;
+        }
+    }
+
     void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
@@ -82,8 +91,10 @@ public class GyroController : MonoBehaviour
                     {
                         if ((state.buttons & _buttonMaskX) != 0 && (_previousButtons & _buttonMaskX) == 0)
                         {
-                            _mazeReferenceRotation = _rigidbody.rotation;
-                            _smoothGyroRotation = Quaternion.identity;
+                            _stepStartRotation = _rigidbody.rotation;
+                            _stepTargetRotation = _mazeReferenceRotation;
+                            _stepRotationElapsedTime = 0f;
+                            _isReturningToReference = true;
                             _isViewing = true;
                         }
                         else
@@ -108,7 +119,7 @@ public class GyroController : MonoBehaviour
                     }
                     else
                     {
-                        if (!_cameraOrbitController.IsRotating && (state.buttons & _buttonMaskY) != 0 && (_previousButtons & _buttonMaskY) == 0)
+                        if (!_cameraOrbitController.IsRotating && (state.buttons & _buttonMaskY) != 0 && (_previousButtons & _buttonMaskY) == 0 && !_isReturningToReference)
                         {
                             Vector3 horizontalForward = Vector3.ProjectOnPlane(_cameraTransform.forward, Vector3.up);
                             if (horizontalForward.sqrMagnitude > 0.000001f && IsValid(_targetRotation))
@@ -168,50 +179,64 @@ public class GyroController : MonoBehaviour
                 }
                 break;
             case (DeviceConnectManager.ConnectionState.InUse):
-                if (IsValid(_targetRotation))
                 {
-                    _targetRotation.Normalize();
-                    if (_isStepRotating)
+                    if (_isReturningToReference)
                     {
                         _stepRotationElapsedTime += Time.fixedDeltaTime;
                         float progress = _stepRotationElapsedTime / _stepRotationDuration;
-                        _mazeReferenceRotation = Quaternion.Slerp(_stepStartRotation, _stepTargetRotation, progress);
+                        _rigidbody.MoveRotation(Quaternion.Slerp(_stepStartRotation, _stepTargetRotation, progress));
                         if (progress >= 1)
                         {
-                            _mazeReferenceRotation = _stepTargetRotation;
-                            _calibrationReferenceRotation = _targetRotation;
-                            _isStepRotating = false;
+                            _smoothGyroRotation = Quaternion.identity;
+                            _isReturningToReference = false;
                         }
+                        return;
                     }
-                    else if (!_isViewing)
+                    if (IsValid(_targetRotation))
                     {
-                        Quaternion relativeRotation = Quaternion.Inverse(_calibrationReferenceRotation) * _targetRotation;
-                        Vector3 twistAxis = Vector3.up;
-                        Vector3 r = new Vector3(relativeRotation.x, relativeRotation.y, relativeRotation.z);
-                        Vector3 p = Vector3.Project(r, twistAxis);
-                        Quaternion twist = new Quaternion(p.x, p.y, p.z, relativeRotation.w);
-                        Quaternion swing = Quaternion.identity;
-                        if (Quaternion.Dot(twist, twist) < float.Epsilon)
+                        _targetRotation.Normalize();
+                        if (_isStepRotating)
                         {
-                            twist = Quaternion.identity;
-                            swing = relativeRotation;
+                            _stepRotationElapsedTime += Time.fixedDeltaTime;
+                            float progress = _stepRotationElapsedTime / _stepRotationDuration;
+                            _mazeReferenceRotation = Quaternion.Slerp(_stepStartRotation, _stepTargetRotation, progress);
+                            if (progress >= 1)
+                            {
+                                _mazeReferenceRotation = _stepTargetRotation;
+                                _calibrationReferenceRotation = _targetRotation;
+                                _isStepRotating = false;
+                            }
                         }
-                        else
+                        else if (!_isViewing)
                         {
-                            twist.Normalize();
-                            swing = relativeRotation * Quaternion.Inverse(twist);
+                            Quaternion relativeRotation = Quaternion.Inverse(_calibrationReferenceRotation) * _targetRotation;
+                            Vector3 twistAxis = Vector3.up;
+                            Vector3 r = new Vector3(relativeRotation.x, relativeRotation.y, relativeRotation.z);
+                            Vector3 p = Vector3.Project(r, twistAxis);
+                            Quaternion twist = new Quaternion(p.x, p.y, p.z, relativeRotation.w);
+                            Quaternion swing = Quaternion.identity;
+                            if (Quaternion.Dot(twist, twist) < float.Epsilon)
+                            {
+                                twist = Quaternion.identity;
+                                swing = relativeRotation;
+                            }
+                            else
+                            {
+                                twist.Normalize();
+                                swing = relativeRotation * Quaternion.Inverse(twist);
+                            }
+                            if (Quaternion.Angle(_smoothGyroRotation, swing) > _rotationDeadZoneDegrees)
+                            {
+                                _smoothGyroRotation = Quaternion.Slerp(_smoothGyroRotation, swing, _rotateSpeed);
+                            }
                         }
-                        if (Quaternion.Angle(_smoothGyroRotation, swing) > _rotationDeadZoneDegrees)
-                        {
-                            _smoothGyroRotation = Quaternion.Slerp(_smoothGyroRotation, swing, _rotateSpeed);
-                        }
-                    }
 
-
-                    Quaternion adjustedRotation = _smoothGyroRotation * _mazeReferenceRotation;
-                    if (IsValid(adjustedRotation))
-                    {
-                        this._rigidbody.MoveRotation(adjustedRotation);
+                        Quaternion worldGyroRotation = _controllReferenceRotation * _smoothGyroRotation * Quaternion.Inverse(_controllReferenceRotation);
+                        Quaternion adjustedRotation = worldGyroRotation * _mazeReferenceRotation;
+                        if (IsValid(adjustedRotation))
+                        {
+                            this._rigidbody.MoveRotation(adjustedRotation);
+                        }
                     }
                 }
                 break;
@@ -219,6 +244,8 @@ public class GyroController : MonoBehaviour
                 _isStartedCalibration = false;
                 _isCalibrationCompleted = false;
                 _isStepRotating = false;
+                _isReturningToReference = false;
+                _isViewing = false;
                 _calibrationElapsedTime = 0f;
                 _stepRotationElapsedTime = 0f;
                 break;
@@ -231,8 +258,9 @@ public class GyroController : MonoBehaviour
         {
             return;
         }
+        Vector3 worldAxis = _controllReferenceRotation * axis;
         _stepStartRotation = _rigidbody.rotation;
-        _stepTargetRotation = Quaternion.AngleAxis(angle, axis) * _mazeReferenceRotation;
+        _stepTargetRotation = Quaternion.AngleAxis(angle, worldAxis) * _mazeReferenceRotation;
         _smoothGyroRotation = Quaternion.identity;
         _stepRotationElapsedTime = 0f;
         _isStepRotating = true;

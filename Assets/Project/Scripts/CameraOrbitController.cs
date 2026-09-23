@@ -40,15 +40,15 @@ public class CameraOrbitController : MonoBehaviour
         else
         {
             JOY_SHOCK_STATE state = JslGetSimpleState(_deviceConnectManager.ActiveDeviceHandle);
-            if (_gyroController.IsViewing)
+            if (_gyroController.IsViewing && !_gyroController.IsReturningToReference)
             {
                 if ((state.buttons & _buttonMaskL) != 0 && (_previousButtons & _buttonMaskL) == 0)
                 {
-                    StartRotation(-90f);
+                    StartRotation(90f);
                 }
                 else if ((state.buttons & _buttonMaskR) != 0 && (_previousButtons & _buttonMaskR) == 0)
                 {
-                    StartRotation(90f);
+                    StartRotation(-90f);
                 }
             }
             _previousButtons = state.buttons;
