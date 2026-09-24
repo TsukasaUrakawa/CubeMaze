@@ -19,7 +19,7 @@ public class Respawn : MonoBehaviour
             return;
         }
         _gyroController.ResetForRespawn();
-        this.transform.position = _respawnPoint.position;
+        this._rigidbody.position = _respawnPoint.position;
         this._rigidbody.linearVelocity = Vector3.zero;
         this._rigidbody.angularVelocity = Vector3.zero;
     }

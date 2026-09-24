@@ -26,9 +26,12 @@ public class CameraOrbitController : MonoBehaviour
     private float _rotationElapsedTime = 0f;
     [SerializeField, Range(1f, 3f)] private float _rotationDuration = 1f;
 
+    private float _initialHorizontalAngle;
+
     void Awake()
     {
         _orbitalFollow = GetComponent<CinemachineOrbitalFollow>();
+        _initialHorizontalAngle = _orbitalFollow.HorizontalAxis.Value;
     }
 
     void Update()
@@ -76,5 +79,12 @@ public class CameraOrbitController : MonoBehaviour
         _targetAngle = _startAngle + angle;
         _rotationElapsedTime = 0f;
         _isRotating = true;
+    }
+
+    public void ResetCameraForRespawn()
+    {
+        _isRotating = false;
+        _rotationElapsedTime = 0f;
+        _orbitalFollow.HorizontalAxis.Value = _initialHorizontalAngle;
     }
 }

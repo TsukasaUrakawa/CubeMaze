@@ -69,7 +69,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c06cae9ee6a51c046a9e9e0f54f318b9, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c374ba19cd3459445a0f5b5580ca6151, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -108,8 +108,8 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_SpriteState:
-    m_HighlightedSprite: {fileID: 21300000, guid: 283aa4096acf79344884388f7bd7105f, type: 3}
-    m_PressedSprite: {fileID: 21300000, guid: 1b068e47608b4cc41bfc5207b147a0f6, type: 3}
+    m_HighlightedSprite: {fileID: 21300000, guid: fc282aa2cee114e48996e42ad6befb55, type: 3}
+    m_PressedSprite: {fileID: 21300000, guid: b504bc066fb7c4c46bb504f48068cdfc, type: 3}
     m_SelectedSprite: {fileID: 0}
     m_DisabledSprite: {fileID: 0}
   m_AnimationTriggers:
@@ -242,8 +242,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

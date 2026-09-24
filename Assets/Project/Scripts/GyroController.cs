@@ -287,6 +287,7 @@ public class GyroController : MonoBehaviour
         {
             _calibrationReferenceRotation = _initialCalibrationRotation;
             _mazeReferenceRotation = _initialMazeRotation;
+            _cameraOrbitController.ResetCameraForRespawn();
             _smoothGyroRotation = Quaternion.identity;
             _controllReferenceRotation = Quaternion.identity;
             _isStepRotating = false;
