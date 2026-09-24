@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 8472065477580946831}
   - component: {fileID: 1452304949508327938}
   - component: {fileID: 8321862906147720396}
+  - component: {fileID: 589926905505196165}
   m_Layer: 5
   m_Name: DeviceListItem
   m_TagString: Untagged
@@ -135,6 +136,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 589926905505196165}
+        m_TargetAssemblyTypeName: UIButtonAudio, Assembly-CSharp
+        m_MethodName: PlayClickSound
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1452304949508327938
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -168,6 +181,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _deviceNameText: {fileID: 6809769766454177555}
+--- !u!114 &589926905505196165
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5098812502752734721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef509dca25fdf7441a5f85595c3684a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &5699528209486165340
 GameObject:
   m_ObjectHideFlags: 0
