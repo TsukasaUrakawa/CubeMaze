@@ -5,19 +5,22 @@ public class Respawn : MonoBehaviour
     private Rigidbody _rigidbody;
     [SerializeField] private Collider _outerCubeCollider;
     [SerializeField] private Transform _respawnPoint;
+    [SerializeField] private GyroController _gyroController;
 
     private void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnCollisionEnter(Collision collision)
     {
-        if (other == _outerCubeCollider)
+        if (collision.collider != _outerCubeCollider)
         {
-            _rigidbody.position = _respawnPoint.position;
-            _rigidbody.linearVelocity = Vector3.zero;
-            _rigidbody.angularVelocity = Vector3.zero;
+            return;
         }
+        _gyroController.ResetForRespawn();
+        this.transform.position = _respawnPoint.position;
+        this._rigidbody.linearVelocity = Vector3.zero;
+        this._rigidbody.angularVelocity = Vector3.zero;
     }
 }
