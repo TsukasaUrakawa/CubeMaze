@@ -23,7 +23,7 @@ public class GyroController : MonoBehaviour
     [SerializeField] private float _rotationDeadZoneDegrees = 0.05f;
     private Rigidbody _rigidbody;
     /// <summary>
-    /// コントローラーから取得した姿勢をUnity用に変換した目標回転
+    /// コントローラーから取得した現在の姿勢をUnity用に変換した目標回転
     /// </summary>
     private Quaternion _targetRotation = Quaternion.identity;
     private bool _isStartedCalibration = false;
@@ -32,14 +32,26 @@ public class GyroController : MonoBehaviour
 
     private float _calibrationElapsedTime = 0f;
 
+    /// <summary>
+    /// コントローラーの傾きをゼロとする姿勢
+    /// </summary>
     private Quaternion _calibrationReferenceRotation = Quaternion.identity;
+    /// <summary>
+    /// ジャイロの傾きを加える前の迷路の基準姿勢
+    /// </summary>
     private Quaternion _mazeReferenceRotation = Quaternion.identity;
+    /// <summary>
+    /// 急激な変化を滑らかにした、ジャイロによる傾き
+    /// </summary>
     private Quaternion _smoothGyroRotation = Quaternion.identity;
 
     private bool _isStepRotating = false;
     private Quaternion _stepStartRotation = Quaternion.identity;
     private Quaternion _stepTargetRotation = Quaternion.identity;
 
+    /// <summary>
+    /// カメラを基準に決めた、操作方向
+    /// </summary>
     private Quaternion _controllReferenceRotation = Quaternion.identity;
     private float _stepRotationElapsedTime = 0f;
     [SerializeField] private float _stepRotationDuration = 1f;
@@ -88,9 +100,9 @@ public class GyroController : MonoBehaviour
             case (DeviceConnectManager.ConnectionState.InUse):
                 MOTION_STATE motion = JslGetMotionState(_deviceConnectManager.ActiveDeviceHandle); // 使用中のデバイスの識別番号からモーションステートを取得
 
-                _targetRotation = new Quaternion(motion.quatX, -motion.quatY, -motion.quatZ, motion.quatW);
+                _targetRotation = new Quaternion(motion.quatX, -motion.quatY, -motion.quatZ, motion.quatW); // コントローラーのクオータニオンを保存
                 JOY_SHOCK_STATE state = JslGetSimpleState(_deviceConnectManager.ActiveDeviceHandle);
-                if (!_isStepRotating && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse)
+                if (!IsViewing && !_isStepRotating && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse)
                 {
                     if (!_isViewing)
                     {
