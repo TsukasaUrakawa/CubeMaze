@@ -164,7 +164,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: cc08ba5bf0587d84893bd5a6d4aa6bf4, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 0.1
+  m_Volume: 0.05
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -4146,10 +4146,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 10
-    m_Right: 10
-    m_Top: 10
-    m_Bottom: 10
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
   m_ChildAlignment: 1
   m_Spacing: 10
   m_ChildForceExpandWidth: 1
@@ -6923,8 +6923,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 10, y: -10.0000305}
-  m_SizeDelta: {x: -40, y: -170}
+  m_AnchoredPosition: {x: 5, y: -10}
+  m_SizeDelta: {x: -20, y: -70}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &845810770
 MonoBehaviour:
@@ -9651,7 +9651,7 @@ MonoBehaviour:
   m_HorizontalScrollbar: {fileID: 0}
   m_VerticalScrollbar: {fileID: 1864888869}
   m_HorizontalScrollbarVisibility: 2
-  m_VerticalScrollbarVisibility: 1
+  m_VerticalScrollbarVisibility: 0
   m_HorizontalScrollbarSpacing: -3
   m_VerticalScrollbarSpacing: -3
   m_OnValueChanged:
@@ -13347,9 +13347,9 @@ RectTransform:
   - {fileID: 1736145981}
   m_Father: {fileID: 1142337970}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0}
-  m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 30}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
+  m_AnchoredPosition: {x: -80, y: 30}
   m_SizeDelta: {x: 150, y: 53.01}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1446849073
@@ -15063,7 +15063,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -20, y: -20}
+  m_SizeDelta: {x: -4, y: -20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1711412716
 GameObject:
@@ -16761,7 +16761,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: -10}
-  m_SizeDelta: {x: 10, y: -169.99997}
+  m_SizeDelta: {x: 10, y: -70}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &1864888869
 MonoBehaviour:
@@ -16825,7 +16825,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -19387,8 +19387,9 @@ MonoBehaviour:
   _outerCubeCollider: {fileID: 1142703016}
   _respawnPoint: {fileID: 1142703017}
   _gyroController: {fileID: 1402133120}
-  _effectPrefab: {fileID: 9157105887711914197, guid: c4f829cb7dd4b864caf8832ec5b1ee55, type: 3}
+  _effectPrefab: {fileID: 7761031033666763820, guid: 1eb833340b41fb444b576c4dced8d4dc, type: 3}
   _effectSE: {fileID: 1119943203}
+  _effectScale: 2
 --- !u!43 &2092982952
 Mesh:
   m_ObjectHideFlags: 0

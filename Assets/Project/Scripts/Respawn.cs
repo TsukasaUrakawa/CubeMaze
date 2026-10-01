@@ -8,7 +8,8 @@ public class Respawn : MonoBehaviour
     [SerializeField] private Transform _respawnPoint;
     [SerializeField] private GyroController _gyroController;
     [SerializeField] private GameObject _effectPrefab;
-    [SerializeField] private AudioSource _effectSE; 
+    [SerializeField] private AudioSource _effectSE;
+    [SerializeField] private float _effectScale = 1f;
     private Bounds _outerCubeBounds;
 
     private void Start()
@@ -29,7 +30,8 @@ public class Respawn : MonoBehaviour
     private void RespawnBall()
     {
         _gyroController.ResetForRespawn();
-        Instantiate(_effectPrefab, this.gameObject.transform);
+        GameObject teleportEffect = Instantiate(_effectPrefab, _respawnPoint.position, _respawnPoint.rotation);
+        teleportEffect.transform.localScale = Vector3.one * _effectScale;
         _effectSE.Play();
         this._rigidbody.position = _respawnPoint.position;
         this._rigidbody.linearVelocity = Vector3.zero;
