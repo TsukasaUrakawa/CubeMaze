@@ -11,6 +11,8 @@ public class Respawn : MonoBehaviour
     [SerializeField] private AudioSource _effectSE;
     [SerializeField] private float _effectScale = 1f;
     private Bounds _outerCubeBounds;
+    [SerializeField] private float _respawnWaitTime = 0.5f;
+    private float _waitElapsedTime = 0f;
 
     private void Start()
     {
@@ -29,12 +31,18 @@ public class Respawn : MonoBehaviour
 
     private void RespawnBall()
     {
-        _gyroController.ResetForRespawn();
-        GameObject teleportEffect = Instantiate(_effectPrefab, _respawnPoint.position, _respawnPoint.rotation);
-        teleportEffect.transform.localScale = Vector3.one * _effectScale;
-        _effectSE.Play();
-        this._rigidbody.position = _respawnPoint.position;
-        this._rigidbody.linearVelocity = Vector3.zero;
-        this._rigidbody.angularVelocity = Vector3.zero;
+        if (!_gyroController.ResetForRespawn())
+        {
+            return;
+        }
+        else
+        {
+            GameObject teleportEffect = Instantiate(_effectPrefab, _respawnPoint.position, _respawnPoint.rotation);
+            teleportEffect.transform.localScale = Vector3.one * _effectScale;
+            _effectSE.Play();
+            this._rigidbody.position = _respawnPoint.position;
+            this._rigidbody.linearVelocity = Vector3.zero;
+            this._rigidbody.angularVelocity = Vector3.zero;
+        }
     }
 }

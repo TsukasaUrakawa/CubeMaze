@@ -9,10 +9,12 @@ using static JSL;
 public class GyroController : MonoBehaviour
 {
     /// <summary>
-    /// 使用中のデバイスの識別番号と接続状態を取得する
+    /// デバイス接続クラスの参照
     /// </summary>
     [SerializeField] private DeviceConnectManager _deviceConnectManager;
-
+    /// <summary>
+    /// カメラ旋回クラスの参照
+    /// </summary>
     [SerializeField] private CameraOrbitController _cameraOrbitController;
     [SerializeField] private Transform _cameraTransform;
 
@@ -27,10 +29,6 @@ public class GyroController : MonoBehaviour
     /// コントローラーから取得した現在の姿勢をUnity用に変換した目標回転
     /// </summary>
     private Quaternion _targetRotation = Quaternion.identity;
-    private bool _isStartedCalibration = false;
-
-    private bool _isCalibrationCompleted = false;
-
     private float _calibrationElapsedTime = 0f;
 
     /// <summary>
@@ -69,23 +67,42 @@ public class GyroController : MonoBehaviour
     private bool _isSavedInitialRotation = false;
 
     /// <summary>
-    /// 操作状態を表すenum
+    /// 迷路の操作状態を表すenum
     /// </summary>
     public enum ControllState
     {
+        /// <summary>
+        /// ジャイロと十字ボタンによる通常操作
+        /// </summary>
         Normal,
+        /// <summary>
+        /// ジャイロのキャリブレーションを実行し、基準姿勢を決定
+        /// </summary>
+        MesuringReference,
+        /// <summary>
+        /// 十字ボタンで90度回転実行する
+        /// </summary>
         StepRotating,
+        /// <summary>
+        /// 迷路の傾きを基準姿勢に戻す
+        /// </summary>
         ReturningToReference,
+        /// <summary>
+        /// カメラでボールの周り観察する
+        /// </summary>
         Viewing,
+        /// <summary>
+        /// リスポーン直後の操作を一時停止する
+        /// </summary>
         WaitingForRespawn
     }
 
     /// <summary>
-    /// 現在の操作状態
+    /// 現在の迷路の操作状態
     /// </summary>
     private ControllState _currentControllState = ControllState.Normal;
     /// <summary>
-    /// 現在の操作状態プロパティ
+    /// 現在の迷路の操作状態プロパティ
     /// </summary>
     public ControllState CurrentControllState
     {
@@ -173,26 +190,23 @@ public class GyroController : MonoBehaviour
                 {
                     _targetRotation.Normalize();
 
-                    if (!_isStartedCalibration)
+                    if (_currentControllState != ControllState.MesuringReference)
                     {
                         _calibrationElapsedTime = 0f;
                         JslResetContinuousCalibration(_deviceConnectManager.ActiveDeviceHandle);
                         JslStartContinuousCalibration(_deviceConnectManager.ActiveDeviceHandle);
-                        _isStartedCalibration = true;
+                        _currentControllState = ControllState.MesuringReference;
                     }
 
-                    if (!_isCalibrationCompleted)
-                    {
-                        _calibrationElapsedTime += Time.fixedDeltaTime;
-                    }
+                    _calibrationElapsedTime += Time.fixedDeltaTime;
 
-                    if (_calibrationElapsedTime > 5f && !_isCalibrationCompleted)
+                    if (_calibrationElapsedTime > 5f)
                     {
                         JslPauseContinuousCalibration(_deviceConnectManager.ActiveDeviceHandle);
-                        _isCalibrationCompleted = true;
                         _calibrationReferenceRotation = _targetRotation;
                         _mazeReferenceRotation = _rigidbody.rotation;
                         _smoothGyroRotation = Quaternion.identity;
+                        _currentControllState = ControllState.Normal;
                         _deviceConnectManager.CompleteCalibration();
                         if (!_isSavedInitialRotation)
                         {
@@ -201,15 +215,14 @@ public class GyroController : MonoBehaviour
                             _isSavedInitialRotation = true;
                         }
                     }
-
-                    if (!_isCalibrationCompleted)
-                    {
-                        return;
-                    }
                 }
                 break;
             case (DeviceConnectManager.ConnectionState.InUse):
                 {
+                    if (_currentControllState == ControllState.WaitingForRespawn)
+                    {
+                        return;
+                    }
                     if (_currentControllState == ControllState.ReturningToReference)
                     {
                         _stepRotationElapsedTime += Time.fixedDeltaTime;
@@ -271,8 +284,6 @@ public class GyroController : MonoBehaviour
                 }
                 break;
             default:
-                _isStartedCalibration = false;
-                _isCalibrationCompleted = false;
                 _currentControllState = ControllState.Normal;
                 _calibrationElapsedTime = 0f;
                 _stepRotationElapsedTime = 0f;
@@ -294,11 +305,11 @@ public class GyroController : MonoBehaviour
         _currentControllState = ControllState.StepRotating;
     }
 
-    public void ResetForRespawn()
+    public bool ResetForRespawn()
     {
         if (!_isSavedInitialRotation)
         {
-            return;
+            return false;
         }
         else
         {
@@ -307,9 +318,10 @@ public class GyroController : MonoBehaviour
             _cameraOrbitController.ResetCameraForRespawn();
             _smoothGyroRotation = Quaternion.identity;
             _controllReferenceRotation = Quaternion.identity;
-            _currentControllState = ControllState.Normal;
+            _currentControllState = ControllState.WaitingForRespawn;
             _stepRotationElapsedTime = 0f;
             _rigidbody.rotation = _initialMazeRotation;
+            return true;
         }
     }
 
