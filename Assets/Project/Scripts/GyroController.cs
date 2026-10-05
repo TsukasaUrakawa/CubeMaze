@@ -325,6 +325,21 @@ public class GyroController : MonoBehaviour
         }
     }
 
+    public bool TryResumeAfterRespawn()
+    {
+        if (_currentControllState == ControllState.WaitingForRespawn && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse && IsValid(_targetRotation))
+        {
+            _calibrationReferenceRotation = _targetRotation.normalized;
+            _smoothGyroRotation = Quaternion.identity;
+            _currentControllState = ControllState.Normal;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     private bool IsValid(Quaternion quaternion)
     {
         if (float.IsNaN(quaternion.x) || float.IsNaN(quaternion.y) || float.IsNaN(quaternion.z) || float.IsNaN(quaternion.w) ||

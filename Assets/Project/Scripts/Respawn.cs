@@ -22,6 +22,18 @@ public class Respawn : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (_gyroController.CurrentControllState == GyroController.ControllState.WaitingForRespawn)
+        {
+            _waitElapsedTime += Time.fixedDeltaTime;
+            if (_waitElapsedTime >= _respawnWaitTime)
+            {
+                if (_gyroController.TryResumeAfterRespawn())
+                {
+                    _rigidbody.isKinematic = false;
+                }
+            }
+            return;
+        }
         Vector3 ballLocalPosition = _outerCubeCollider.transform.InverseTransformPoint(_rigidbody.position);
         if (!_outerCubeBounds.Contains(ballLocalPosition))
         {
@@ -37,12 +49,14 @@ public class Respawn : MonoBehaviour
         }
         else
         {
+            _waitElapsedTime = 0f;
             GameObject teleportEffect = Instantiate(_effectPrefab, _respawnPoint.position, _respawnPoint.rotation);
             teleportEffect.transform.localScale = Vector3.one * _effectScale;
             _effectSE.Play();
-            this._rigidbody.position = _respawnPoint.position;
             this._rigidbody.linearVelocity = Vector3.zero;
             this._rigidbody.angularVelocity = Vector3.zero;
+            this._rigidbody.isKinematic = true;
+            this._rigidbody.position = _respawnPoint.position;
         }
     }
 }
