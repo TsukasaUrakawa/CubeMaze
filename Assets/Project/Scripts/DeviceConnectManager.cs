@@ -10,6 +10,9 @@ using static JSL;
 /// </summary>
 public class DeviceConnectManager : MonoBehaviour
 {
+    /// <summary>
+    /// 準備中の理由や検索結果を表示する案内文。
+    /// </summary>
     [SerializeField] private TextMeshProUGUI _messageText;
 
     /// <summary>
@@ -44,6 +47,9 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     private ConnectionState _currentConnectionState = ConnectionState.Preparing;
 
+    /// <summary>
+    /// 現在の接続状態を外部へ読み取り専用で公開する。
+    /// </summary>
     public ConnectionState CurrentConnectionState
     {
         get
@@ -80,6 +86,9 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     private PreparingReason _currentPreparingReason = PreparingReason.InitialStartup;
 
+    /// <summary>
+    /// 接続準備へ戻った理由を外部へ公開する。
+    /// </summary>
     public PreparingReason CurrentPreparingReason
     {
         get
@@ -91,6 +100,9 @@ public class DeviceConnectManager : MonoBehaviour
     private int _detectedDeviceCount = 0; // 接続済みのデバイス数
     private int[] _selectionCandidateHandles; // 接続済みのデバイスの識別番号を格納
     private int _activeDeviceHandle = -1; // 選択されたデバイスの識別番号
+    /// <summary>
+    /// 選択確定した機器のJSL識別番号。未選択・切断時は-1。
+    /// </summary>
     public int ActiveDeviceHandle
     {
         get
@@ -109,6 +121,9 @@ public class DeviceConnectManager : MonoBehaviour
     /// </summary>
     public event Action<ConnectionState> ConnectionStateChanged;
 
+    /// <summary>
+    /// 現在の接続状態に対応する検索・接続確認・案内表示を実行する。
+    /// </summary>
     private void Update()
     {
         switch (_currentConnectionState)
@@ -159,13 +174,14 @@ public class DeviceConnectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 選択候補の接続確認
+    /// 候補が一台でも接続を維持しているか調べ、全台切断なら準備状態へ戻す。
     /// </summary>
     private void CheckSelectionCandidateConnections()
     {
         bool hasConnectedSelectionCandidates = false;　// 接続し続けているか判定
 
         // 継続した接続確認
+        // ここでは候補が一台でも残っているかを調べる。切断した候補を個別に削除する処理ではない。
         _selectionCandidateHandles.ToList().ForEach(selectionCandidateHandle => hasConnectedSelectionCandidates |= JslStillConnected(selectionCandidateHandle));
 
         if (!hasConnectedSelectionCandidates)
@@ -289,6 +305,7 @@ public class DeviceConnectManager : MonoBehaviour
     /// <param name="decidedDeviceHandle">選択したデバイスの識別番号</param>
     public void ConfirmDeviceSelection(int decidedDeviceHandle)
     {
+        // 候補表示後に切断される場合があるため、確定する瞬間にもIDと接続を確認する。
         if (_currentConnectionState != ConnectionState.Selecting || !_selectionCandidateHandles.Contains(decidedDeviceHandle) || !JslStillConnected(decidedDeviceHandle))
             return;
 
@@ -327,7 +344,7 @@ public class DeviceConnectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ゲーム終了時にリソースを解放する
+    /// このコンポーネントの破棄時に、JSLが管理する全機器の接続とリソースを解放する。
     /// </summary>
     private void OnDestroy()
     {

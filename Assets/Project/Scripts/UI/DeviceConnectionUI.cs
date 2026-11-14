@@ -2,22 +2,46 @@ using System.Collections.Generic;
 using UnityEngine;
 using static JSL.ControllerType;
 
+/// <summary>
+/// 候補一覧・詳細選択・接続状態の表示を仲介し、測定表示とパネルの操作可否を切り替える。
+/// </summary>
 public class DeviceConnectionUI : MonoBehaviour
 {
+    /// <summary>
+    /// 検出候補ごとに生成する一覧の行。
+    /// </summary>
     [SerializeField] private DeviceListItem _deviceListItemPrefab;
+    /// <summary>
+    /// 候補の行を配置するScrollViewのContent。
+    /// </summary>
     [SerializeField] private RectTransform _deviceListContent;
+    /// <summary>
+    /// 候補・接続状態の通知元と、選択確定の依頼先。
+    /// </summary>
     [SerializeField] private DeviceConnectManager _deviceConnectManager;
+    /// <summary>
+    /// クリックした候補の表示と、確定要求の通知を担当するUI。
+    /// </summary>
     [SerializeField] private DeviceDetailUI _deviceDetailUI;
+    /// <summary>
+    /// 測定中に表示するアニメーション。測定の完了判定は接続管理が担当する。
+    /// </summary>
     [SerializeField] private Animator _calibrationAnimator;
+    /// <summary>
+    /// 接続パネルの見た目・操作・クリック遮断をまとめて切り替える。
+    /// </summary>
     private CanvasGroup _deviceConnectionCanvasGroup;
 
+    /// <summary>
+    /// 同じオブジェクトのCanvasGroupを取得する。
+    /// </summary>
     private void Awake()
     {
         _deviceConnectionCanvasGroup = GetComponent<CanvasGroup>();
     }
 
     /// <summary>
-    /// デバイスの選択候補それぞれで行う処理
+    /// 既存の候補行を破棄し、通知された候補IDから表示名と選択ボタンを作り直す。
     /// </summary>
     /// <param name="selectionCandidates">選択候補</param>
     private void OnSelectionCandidatesChanged(IReadOnlyList<int> selectionCandidates)
@@ -28,6 +52,7 @@ public class DeviceConnectionUI : MonoBehaviour
             Destroy(child.gameObject);
         }
 
+        // 表示名には同種内の番号を付けるが、実際の選択はJSLの機器IDで区別する。
         Dictionary<int, int> controllerTypeCounts = new Dictionary<int, int>();
 
         // 選択候補のButtonを一つずつ生成
@@ -64,6 +89,7 @@ public class DeviceConnectionUI : MonoBehaviour
         }
         if (currentConnectionState == DeviceConnectManager.ConnectionState.InUse)
         {
+            // 透明にするだけではクリックを遮るため、操作可否とRaycastも同時に無効にする。
             _deviceConnectionCanvasGroup.alpha = 0;
             _deviceConnectionCanvasGroup.interactable = false;
             _deviceConnectionCanvasGroup.blocksRaycasts = false;
@@ -110,6 +136,9 @@ public class DeviceConnectionUI : MonoBehaviour
         _deviceConnectManager.ConfirmDeviceSelection(deviceHandle);
     }
 
+    /// <summary>
+    /// 候補・確定・接続の通知を購読し、現在の接続状態を表示へ反映する。
+    /// </summary>
     private void OnEnable()
     {
         _deviceConnectManager.SelectionCandidatesChanged += OnSelectionCandidatesChanged;
@@ -118,6 +147,9 @@ public class DeviceConnectionUI : MonoBehaviour
         OnConnectionStateChanged(_deviceConnectManager.CurrentConnectionState);
     }
 
+    /// <summary>
+    /// 再表示で通知が重複しないよう、この画面の購読を解除する。
+    /// </summary>
     private void OnDisable()
     {
         _deviceConnectManager.SelectionCandidatesChanged -= OnSelectionCandidatesChanged;

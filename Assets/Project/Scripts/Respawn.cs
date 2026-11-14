@@ -1,16 +1,49 @@
 using UnityEngine;
 
+/// <summary>
+/// 場外検知からボールの停止・初期位置への配置・操作再開まで、一回の復帰を管理する。
+/// </summary>
 public class Respawn : MonoBehaviour
 {
+    /// <summary>
+    /// 復帰時に位置・速度・物理移動の有効状態を変更するボール。
+    /// </summary>
     private Rigidbody _rigidbody;
+    /// <summary>
+    /// 場外判定の基準。メッシュのローカルBoundsとTransformを利用する。
+    /// </summary>
     [SerializeField] private Collider _outerCubeCollider;
+    /// <summary>
+    /// ボール中心を戻す地点。開始時のワールド位置・回転を保存する。
+    /// </summary>
     [SerializeField] private Transform _respawnPoint;
+    /// <summary>
+    /// 迷路の初期化と、現在の機器姿勢を基準にした操作再開を依頼する相手。
+    /// </summary>
     [SerializeField] private GyroController _gyroController;
+    /// <summary>
+    /// 復帰の配置成功時に生成する演出のPrefab。
+    /// </summary>
     [SerializeField] private GameObject _effectPrefab;
+    /// <summary>
+    /// 復帰の配置成功時に鳴らすSEの音源。
+    /// </summary>
     [SerializeField] private AudioSource _effectSE;
+    /// <summary>
+    /// 生成した演出個体に適用する各軸共通のスケール。
+    /// </summary>
     [SerializeField] private float _effectScale = 1f;
+    /// <summary>
+    /// OuterCubeのメッシュが持つローカル座標の境界。
+    /// </summary>
     private Bounds _outerCubeBounds;
+    /// <summary>
+    /// 配置後、操作再開を試みるまでの待機時間（秒）。
+    /// </summary>
     [SerializeField] private float _respawnWaitTime = 0.5f;
+    /// <summary>
+    /// 今回の配置後に経過した物理更新の時間（秒）。
+    /// </summary>
     private float _waitElapsedTime = 0f;
 
     // リスポーン地点の初期位置を保持する変数
@@ -19,17 +52,62 @@ public class Respawn : MonoBehaviour
     // リスポーン地点の初期回転を保持する変数
     private Quaternion _initialRotation;
 
+    /// <summary>
+    /// 復帰の受付から終了までの進行段階。迷路の操作モードとは別に管理する。
+    /// </summary>
+    public enum RespawnState
+    {
+        /// <summary>
+        /// 新しい復帰要求を受け付けられる状態。
+        /// </summary>
+        Ready,
+        /// <summary>
+        /// ボールを停止し、迷路の初期化と配置を行っている状態。
+        /// </summary>
+        Restoring,
+        /// <summary>
+        /// 配置後、待機時間と操作再開条件を確認している状態。
+        /// </summary>
+        WaitingToResume,
+        /// <summary>
+        /// 初期化に失敗し、自動的な再受付を止めている状態。
+        /// </summary>
+        RecoveryRequired,
+    }
+
+    /// <summary>
+    /// Ready以外の状態かを取得する。失敗による停止中も含む。
+    /// </summary>
+    public bool IsRespawning => _currentRespawnState != RespawnState.Ready;
+
+    /// <summary>
+    /// 復帰進行の保存先。初期値は列挙値0のReady。
+    /// </summary>
+    private RespawnState _currentRespawnState;
+
+    /// <summary>
+    /// 現在の復帰段階を外部へ読み取り専用で公開する。
+    /// </summary>
+    public RespawnState CurrentRespawnState => _currentRespawnState;
+
+    /// <summary>
+    /// 操作開始前の復帰先と、ボール・場外判定に必要な情報を保存する。
+    /// </summary>
     private void Start()
     {
+        // 迷路を戻した直後の子Transformを読み直さずに済むよう、操作前のワールド位置・回転を保存する。
         _initialPosition = _respawnPoint.position;
         _initialRotation = _respawnPoint.rotation;
         _rigidbody = GetComponent<Rigidbody>();
         _outerCubeBounds = _outerCubeCollider.GetComponent<MeshFilter>().sharedMesh.bounds;
     }
 
+    /// <summary>
+    /// 復帰待ち中は再開を試み、それ以外ではボール中心の場外を検知する。
+    /// </summary>
     private void FixedUpdate()
     {
-        if (_gyroController.CurrentControllState == GyroController.ControllState.WaitingForRespawn)
+        if (_currentRespawnState == RespawnState.WaitingToResume)
         {
             _waitElapsedTime += Time.fixedDeltaTime;
             if (_waitElapsedTime >= _respawnWaitTime)
@@ -37,10 +115,12 @@ public class Respawn : MonoBehaviour
                 if (_gyroController.TryResumeAfterRespawn())
                 {
                     _rigidbody.isKinematic = false;
+                    _currentRespawnState = RespawnState.Ready;
                 }
             }
             return;
         }
+        // Boundsはメッシュのローカル座標なので、球の中心も同じ座標系へ変換して比較する。
         Vector3 ballLocalPosition = _outerCubeCollider.transform.InverseTransformPoint(_rigidbody.position);
         if (!_outerCubeBounds.Contains(ballLocalPosition))
         {
@@ -48,22 +128,36 @@ public class Respawn : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 重複要求を拒否し、停止・迷路初期化・配置を行う。成功した場合だけ演出する。
+    /// </summary>
     private void RespawnBall()
     {
-        if (!_gyroController.ResetForRespawn())
+        if (_currentRespawnState != RespawnState.Ready)
         {
             return;
         }
         else
         {
-            _waitElapsedTime = 0f;
-            GameObject teleportEffect = Instantiate(_effectPrefab, _initialPosition, _initialRotation);
-            teleportEffect.transform.localScale = Vector3.one * _effectScale;
-            _effectSE.Play();
+            // 他の処理を呼ぶ前に受付済みにし、同じ復帰中の追加要求を拒否する。
+            _currentRespawnState = RespawnState.Restoring;
             this._rigidbody.linearVelocity = Vector3.zero;
             this._rigidbody.angularVelocity = Vector3.zero;
             this._rigidbody.isKinematic = true;
-            this._rigidbody.position = _initialPosition;
+            if (_gyroController.ResetForRespawn())
+            {
+                this._rigidbody.position = _initialPosition;
+                _waitElapsedTime = 0f;
+                _currentRespawnState = RespawnState.WaitingToResume;
+                GameObject teleportEffect = Instantiate(_effectPrefab, _initialPosition, _initialRotation);
+                teleportEffect.transform.localScale = Vector3.one * _effectScale;
+                _effectSE.Play();
+            }
+            else
+            {
+                // 失敗を通常状態へ戻さず、次の物理更新で同じ復帰を繰り返さないようにする。
+                _currentRespawnState = RespawnState.RecoveryRequired;
+            }
         }
     }
 }

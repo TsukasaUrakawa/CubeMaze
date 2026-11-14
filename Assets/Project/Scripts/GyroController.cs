@@ -16,19 +16,36 @@ public class GyroController : MonoBehaviour
     /// カメラ旋回クラスの参照
     /// </summary>
     [SerializeField] private CameraOrbitController _cameraOrbitController;
+    /// <summary>
+    /// 観察を適用した時の水平なカメラ方向から、迷路操作の基準を決める。
+    /// </summary>
     [SerializeField] private Transform _cameraTransform;
 
     /// <summary>
-    /// 現在の回転からコントローラーの姿勢へ補間するときの割合
+    /// 一回の物理更新で傾きを目標へ近づける補間割合。角速度ではない。
     /// </summary>
     [SerializeField] private float _rotateSpeed = 0.3f;
 
+    /// <summary>
+    /// 補間済みの傾きと目標傾きの差がこの角度以下なら更新しない（度）。
+    /// </summary>
     [SerializeField] private float _rotationDeadZoneDegrees = 0.05f;
+
+    /// <summary>
+    /// 復帰中の操作適用を止めるための参照。復帰の進行はRespawnが決める。
+    /// </summary>
+    [SerializeField] private Respawn _respawn;
+    /// <summary>
+    /// 迷路全体の姿勢を物理更新で変更するRigidbody。
+    /// </summary>
     private Rigidbody _rigidbody;
     /// <summary>
     /// コントローラーから取得した現在の姿勢をUnity用に変換した目標回転
     /// </summary>
     private Quaternion _targetRotation = Quaternion.identity;
+    /// <summary>
+    /// 現在のキャリブレーション開始からの経過時間（秒）。
+    /// </summary>
     private float _calibrationElapsedTime = 0f;
 
     /// <summary>
@@ -43,17 +60,33 @@ public class GyroController : MonoBehaviour
     /// 急激な変化を滑らかにした、ジャイロによる傾き
     /// </summary>
     private Quaternion _smoothGyroRotation = Quaternion.identity;
+    /// <summary>
+    /// 90度回転または基準姿勢へ戻す補間の開始姿勢。
+    /// </summary>
     private Quaternion _stepStartRotation = Quaternion.identity;
+    /// <summary>
+    /// 90度回転または基準姿勢へ戻す補間の到達姿勢。
+    /// </summary>
     private Quaternion _stepTargetRotation = Quaternion.identity;
 
     /// <summary>
     /// カメラを基準に決めた、操作方向
     /// </summary>
     private Quaternion _controllReferenceRotation = Quaternion.identity;
+    /// <summary>
+    /// 現在の段階回転に費やした時間（秒）。
+    /// </summary>
     private float _stepRotationElapsedTime = 0f;
+    /// <summary>
+    /// 90度回転および基準姿勢へ戻す補間にかける時間（秒）。
+    /// </summary>
     [SerializeField] private float _stepRotationDuration = 1f;
 
+    /// <summary>
+    /// 前回取得した押下ビット。現在値と比較し、押し始めだけを検出する。
+    /// </summary>
     private int _previousButtons = 0;
+    // JSLのボタン番号を、一つのビットだけが立つ判定用マスクへ変換する。
     private int _buttonMaskUp = 1 << ButtonMaskUp;
     private int _buttonMaskDown = 1 << ButtonMaskDown;
     private int _buttonMaskLeft = 1 << ButtonMaskLeft;
@@ -61,9 +94,18 @@ public class GyroController : MonoBehaviour
     private int _buttonMaskX = 1 << ButtonMaskN;
     private int _buttonMaskY = 1 << ButtonMaskW;
 
+    /// <summary>
+    /// 初回測定の基準姿勢の記録。現在の復帰処理では読み出していない。
+    /// </summary>
     private Quaternion _initialCalibrationRotation = Quaternion.identity;
+    /// <summary>
+    /// 初回測定完了時に保存する、復帰用の迷路のワールド姿勢。
+    /// </summary>
     private Quaternion _initialMazeRotation = Quaternion.identity;
 
+    /// <summary>
+    /// 初回の迷路姿勢を保存済みか。復帰可能かの判定と上書き防止に使う。
+    /// </summary>
     private bool _isSavedInitialRotation = false;
 
     /// <summary>
@@ -94,7 +136,7 @@ public class GyroController : MonoBehaviour
         /// <summary>
         /// リスポーン直後の操作を一時停止する
         /// </summary>
-        WaitingForRespawn
+        Suspended
     }
 
     /// <summary>
@@ -112,11 +154,17 @@ public class GyroController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 同じオブジェクトの迷路用Rigidbodyを取得する。
+    /// </summary>
     void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
     }
 
+    /// <summary>
+    /// 使用機器の姿勢・ボタンを取得し、復帰中でなければ操作モードを切り替える。
+    /// </summary>
     void Update()
     {
         switch (_deviceConnectManager.CurrentConnectionState)
@@ -127,7 +175,8 @@ public class GyroController : MonoBehaviour
 
                 _targetRotation = new Quaternion(motion.quatX, -motion.quatY, -motion.quatZ, motion.quatW); // コントローラーのクオータニオンを保存
                 JOY_SHOCK_STATE state = JslGetSimpleState(_deviceConnectManager.ActiveDeviceHandle);
-                if (_currentControllState != ControllState.StepRotating && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse)
+                // 復帰中も姿勢取得と押下履歴の更新は続けるが、操作要求は適用しない。
+                if (_currentControllState != ControllState.StepRotating && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse && !_respawn.IsRespawning)
                 {
                     if (_currentControllState == ControllState.Normal)
                     {
@@ -162,6 +211,7 @@ public class GyroController : MonoBehaviour
                     {
                         if (_currentControllState == ControllState.Viewing && !_cameraOrbitController.IsRotating && (state.buttons & _buttonMaskY) != 0 && (_previousButtons & _buttonMaskY) == 0)
                         {
+                            // カメラの上下の傾きを除き、観察後の左右・前後操作を水平な視点方向へ合わせる。
                             Vector3 horizontalForward = Vector3.ProjectOnPlane(_cameraTransform.forward, Vector3.up);
                             if (horizontalForward.sqrMagnitude > 0.000001f && IsValid(_targetRotation))
                             {
@@ -181,6 +231,9 @@ public class GyroController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 測定を進め、使用中は操作モードに応じて迷路の姿勢を物理更新へ反映する。
+    /// </summary>
     private void FixedUpdate()
     {
         switch (_deviceConnectManager.CurrentConnectionState)
@@ -208,6 +261,7 @@ public class GyroController : MonoBehaviour
                         _smoothGyroRotation = Quaternion.identity;
                         _currentControllState = ControllState.Normal;
                         _deviceConnectManager.CompleteCalibration();
+                        // 初回の測定結果だけを復帰用に保存し、再測定で復帰先の基準を上書きしない。
                         if (!_isSavedInitialRotation)
                         {
                             _initialCalibrationRotation = _calibrationReferenceRotation;
@@ -219,7 +273,8 @@ public class GyroController : MonoBehaviour
                 break;
             case (DeviceConnectManager.ConnectionState.InUse):
                 {
-                    if (_currentControllState == ControllState.WaitingForRespawn)
+                    // この停止はInUseだけに適用し、再接続後のキャリブレーションは進められるようにする。
+                    if (_respawn.IsRespawning)
                     {
                         return;
                     }
@@ -252,12 +307,15 @@ public class GyroController : MonoBehaviour
                         }
                         else if (_currentControllState == ControllState.Normal)
                         {
+                            // 基準からの相対姿勢を求め、機器を持ち直した姿勢をゼロとして扱う。
                             Quaternion relativeRotation = Quaternion.Inverse(_calibrationReferenceRotation) * _targetRotation;
                             Vector3 twistAxis = Vector3.up;
                             Vector3 r = new Vector3(relativeRotation.x, relativeRotation.y, relativeRotation.z);
+                            // Y軸まわりのねじれ成分twistを分離し、残る傾きswingを迷路へ使う。
                             Vector3 p = Vector3.Project(r, twistAxis);
                             Quaternion twist = new Quaternion(p.x, p.y, p.z, relativeRotation.w);
                             Quaternion swing = Quaternion.identity;
+                            // ねじれの長さがほぼゼロなら正規化を避け、相対姿勢全体を傾きとして扱う。
                             if (Quaternion.Dot(twist, twist) < float.Epsilon)
                             {
                                 twist = Quaternion.identity;
@@ -274,6 +332,7 @@ public class GyroController : MonoBehaviour
                             }
                         }
 
+                        // 操作基準で傾きの軸をワールドへ移し、迷路の基準姿勢へ重ねる。積の順序で結果が変わる。
                         Quaternion worldGyroRotation = _controllReferenceRotation * _smoothGyroRotation * Quaternion.Inverse(_controllReferenceRotation);
                         Quaternion adjustedRotation = worldGyroRotation * _mazeReferenceRotation;
                         if (IsValid(adjustedRotation))
@@ -291,6 +350,11 @@ public class GyroController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 操作基準に合わせた軸で、迷路の基準姿勢を段階的に回す準備をする。
+    /// </summary>
+    /// <param name="axis">操作基準内での回転軸。</param>
+    /// <param name="angle">回転する角度（度）。</param>
     private void RotateMazeReference(Vector3 axis, float angle)
     {
         if (_currentControllState == ControllState.StepRotating)
@@ -305,6 +369,10 @@ public class GyroController : MonoBehaviour
         _currentControllState = ControllState.StepRotating;
     }
 
+    /// <summary>
+    /// 初回の姿勢が保存済みなら、迷路・操作基準・カメラを復帰用に初期化する。
+    /// </summary>
+    /// <returns>初期化を実行できた場合はtrue。初回姿勢が未保存ならfalse。</returns>
     public bool ResetForRespawn()
     {
         if (!_isSavedInitialRotation)
@@ -318,16 +386,21 @@ public class GyroController : MonoBehaviour
             _cameraOrbitController.ResetCameraForRespawn();
             _smoothGyroRotation = Quaternion.identity;
             _controllReferenceRotation = Quaternion.identity;
-            _currentControllState = ControllState.WaitingForRespawn;
+            _currentControllState = ControllState.Suspended;
             _stepRotationElapsedTime = 0f;
             _rigidbody.rotation = _initialMazeRotation;
             return true;
         }
     }
 
+    /// <summary>
+    /// 復帰中・機器使用中・有効な姿勢の条件を確認し、現在の姿勢を操作基準にする。
+    /// </summary>
+    /// <returns>操作再開の準備ができた場合はtrue。ボールの再開と復帰完了は呼び出し元が行う。</returns>
     public bool TryResumeAfterRespawn()
     {
-        if (_currentControllState == ControllState.WaitingForRespawn && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse && IsValid(_targetRotation))
+        // 再測定で操作モードが変わっても、復帰進行はRespawnの状態で判定する。
+        if (_respawn.IsRespawning && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse && IsValid(_targetRotation))
         {
             _calibrationReferenceRotation = _targetRotation.normalized;
             _smoothGyroRotation = Quaternion.identity;
@@ -340,6 +413,11 @@ public class GyroController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 成分が有限で、長さがほぼゼロではないQuaternionかを調べる。
+    /// </summary>
+    /// <param name="quaternion">検査する姿勢。</param>
+    /// <returns>数値として利用可能ならtrue。接続状態や入力の鮮度は検査しない。</returns>
     private bool IsValid(Quaternion quaternion)
     {
         if (float.IsNaN(quaternion.x) || float.IsNaN(quaternion.y) || float.IsNaN(quaternion.z) || float.IsNaN(quaternion.w) ||
