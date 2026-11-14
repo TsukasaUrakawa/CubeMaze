@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2793468175017224031}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Road_LeftRightWall
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -46,7 +46,7 @@ GameObject:
   - component: {fileID: 4740816468433731702}
   - component: {fileID: 1381206025489059512}
   - component: {fileID: 8764331954737530120}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}

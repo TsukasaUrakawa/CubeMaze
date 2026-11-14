@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4160454517255610289}
   - component: {fileID: 3951432859601823901}
   - component: {fileID: 8980749270853323730}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -13273,7 +13273,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3019538199442223071}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Pocket
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -91,13 +91,34 @@ public class Respawn : MonoBehaviour
     public RespawnState CurrentRespawnState => _currentRespawnState;
 
     /// <summary>
+    /// ボール中心の位置が初期位置からどれだけ離れているかを許容する距離。
+    /// </summary>
+    private float _allowingDistance = 0.1f;
+
+    /// <summary>
+    /// ボールの物理的相互作用を検出するためのスフィアコライダー。
+    /// </summary>
+    private SphereCollider _sphereCollider;
+
+    /// <summary>
+    /// 重なっているかを判定する対象のレイヤー。ボールと迷路の壁などを除外する。
+    /// </summary>
+    [SerializeField] private LayerMask _targetLayer;
+
+    private float _scale;
+
+    /// <summary>
     /// 操作開始前の復帰先と、ボール・場外判定に必要な情報を保存する。
     /// </summary>
     private void Start()
     {
-        // 迷路を戻した直後の子Transformを読み直さずに済むよう、操作前のワールド位置・回転を保存する。
+        _scale = this.transform.lossyScale.x;
+
+        // 操作前のワールド位置・回転を保存する。
         _initialPosition = _respawnPoint.position;
         _initialRotation = _respawnPoint.rotation;
+
+        _sphereCollider = GetComponent<SphereCollider>();
         _rigidbody = GetComponent<Rigidbody>();
         _outerCubeBounds = _outerCubeCollider.GetComponent<MeshFilter>().sharedMesh.bounds;
     }
@@ -112,10 +133,17 @@ public class Respawn : MonoBehaviour
             _waitElapsedTime += Time.fixedDeltaTime;
             if (_waitElapsedTime >= _respawnWaitTime)
             {
-                if (_gyroController.TryResumeAfterRespawn())
+                if (IsPlacementSafe())
                 {
-                    _rigidbody.isKinematic = false;
-                    _currentRespawnState = RespawnState.Ready;
+                    if (_gyroController.TryResumeAfterRespawn())
+                    {
+                        _rigidbody.isKinematic = false;
+                        _currentRespawnState = RespawnState.Ready;
+                    }
+                }
+                else
+                {
+                    _currentRespawnState = RespawnState.RecoveryRequired;
                 }
             }
             return;
@@ -159,5 +187,27 @@ public class Respawn : MonoBehaviour
                 _currentRespawnState = RespawnState.RecoveryRequired;
             }
         }
+    }
+
+    private bool IsPlacementSafe()
+    {
+        // ボールの中心を基準に、スフィアコライダーの半径で重なりを検出する。
+        Collider[] overlappingColliders = Physics.OverlapSphere(_rigidbody.position, _sphereCollider.radius * _scale, _targetLayer, QueryTriggerInteraction.Ignore);
+        foreach (Collider collider in overlappingColliders)
+        {
+            if (Physics.ComputePenetration(
+                _sphereCollider, _rigidbody.position, _rigidbody.rotation,
+                collider, collider.transform.position, collider.transform.rotation,
+                out Vector3 direction, out float distance
+            ))
+            {
+                // 重なりがある場合は配置が安全でないと判断する。
+                return false;
+            }
+        }
+        float measuredDistance = Vector3.Distance(_rigidbody.position, _initialPosition);
+        // ボールの中心が場外判定の範囲内にあるかを確認する。
+        Vector3 ballLocalPosition = _outerCubeCollider.transform.InverseTransformPoint(_rigidbody.position);
+        return _outerCubeBounds.Contains(ballLocalPosition) && measuredDistance <= _allowingDistance;
     }
 }

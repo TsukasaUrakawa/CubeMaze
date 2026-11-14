@@ -154,6 +154,9 @@ public class GyroController : MonoBehaviour
         }
     }
 
+    private int _sampleDeviceHandle = -1;
+    private bool _hasCurrentSample = false;
+
     /// <summary>
     /// 同じオブジェクトの迷路用Rigidbodyを取得する。
     /// </summary>

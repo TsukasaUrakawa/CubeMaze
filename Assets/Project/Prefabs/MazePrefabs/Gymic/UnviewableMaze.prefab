@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6730870375665560754}
   - component: {fileID: 1019708890741001192}
   - component: {fileID: 5028319109852336865}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39072,7 +39072,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3845333307243032583}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: UnviewableMaze
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 4037362757866502818}
   - component: {fileID: 553513341907209487}
   - component: {fileID: 3355902506149639126}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5943,7 +5943,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8172108845505874730}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Bowl
   m_TagString: Untagged
   m_Icon: {fileID: 0}

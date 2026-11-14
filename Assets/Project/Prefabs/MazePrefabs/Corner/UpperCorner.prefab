@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 2531113601070805854}
   - component: {fileID: 779232140222668169}
   - component: {fileID: 7104609292157324620}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1115,7 +1115,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5224079942931801139}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: UpperCorner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
