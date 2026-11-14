@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class Respawn : MonoBehaviour
@@ -14,8 +13,16 @@ public class Respawn : MonoBehaviour
     [SerializeField] private float _respawnWaitTime = 0.5f;
     private float _waitElapsedTime = 0f;
 
+    // リスポーン地点の初期位置を保持する変数
+    private Vector3 _initialPosition;
+
+    // リスポーン地点の初期回転を保持する変数
+    private Quaternion _initialRotation;
+
     private void Start()
     {
+        _initialPosition = _respawnPoint.position;
+        _initialRotation = _respawnPoint.rotation;
         _rigidbody = GetComponent<Rigidbody>();
         _outerCubeBounds = _outerCubeCollider.GetComponent<MeshFilter>().sharedMesh.bounds;
     }
@@ -50,13 +57,13 @@ public class Respawn : MonoBehaviour
         else
         {
             _waitElapsedTime = 0f;
-            GameObject teleportEffect = Instantiate(_effectPrefab, _respawnPoint.position, _respawnPoint.rotation);
+            GameObject teleportEffect = Instantiate(_effectPrefab, _initialPosition, _initialRotation);
             teleportEffect.transform.localScale = Vector3.one * _effectScale;
             _effectSE.Play();
             this._rigidbody.linearVelocity = Vector3.zero;
             this._rigidbody.angularVelocity = Vector3.zero;
             this._rigidbody.isKinematic = true;
-            this._rigidbody.position = _respawnPoint.position;
+            this._rigidbody.position = _initialPosition;
         }
     }
 }
