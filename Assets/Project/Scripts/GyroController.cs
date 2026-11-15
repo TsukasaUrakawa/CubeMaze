@@ -177,6 +177,8 @@ public class GyroController : MonoBehaviour
                 MOTION_STATE motion = JslGetMotionState(_deviceConnectManager.ActiveDeviceHandle); // 使用中のデバイスの識別番号からモーションステートを取得
 
                 _targetRotation = new Quaternion(motion.quatX, -motion.quatY, -motion.quatZ, motion.quatW); // コントローラーのクオータニオンを保存
+                _sampleDeviceHandle = _deviceConnectManager.ActiveDeviceHandle;
+                _hasCurrentSample = IsValid(_targetRotation);
                 JOY_SHOCK_STATE state = JslGetSimpleState(_deviceConnectManager.ActiveDeviceHandle);
                 // 復帰中も姿勢取得と押下履歴の更新は続けるが、操作要求は適用しない。
                 if (_currentControllState != ControllState.StepRotating && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse && !_respawn.IsRespawning)
@@ -230,6 +232,8 @@ public class GyroController : MonoBehaviour
                 _previousButtons = state.buttons;
                 break;
             default:
+                _hasCurrentSample = false;
+                _sampleDeviceHandle = -1;
                 break;
         }
     }
@@ -403,7 +407,7 @@ public class GyroController : MonoBehaviour
     public bool TryResumeAfterRespawn()
     {
         // 再測定で操作モードが変わっても、復帰進行はRespawnの状態で判定する。
-        if (_respawn.IsRespawning && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse && IsValid(_targetRotation))
+        if (_respawn.IsRespawning && _deviceConnectManager.CurrentConnectionState == DeviceConnectManager.ConnectionState.InUse && IsValid(_targetRotation) && _hasCurrentSample && _sampleDeviceHandle == _deviceConnectManager.ActiveDeviceHandle)
         {
             _calibrationReferenceRotation = _targetRotation.normalized;
             _smoothGyroRotation = Quaternion.identity;

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 /// <summary>
 /// 場外検知からボールの停止・初期位置への配置・操作再開まで、一回の復帰を管理する。
@@ -17,39 +18,45 @@ public class Respawn : MonoBehaviour
     /// ボール中心を戻す地点。開始時のワールド位置・回転を保存する。
     /// </summary>
     [SerializeField] private Transform _respawnPoint;
+
     /// <summary>
     /// 迷路の初期化と、現在の機器姿勢を基準にした操作再開を依頼する相手。
     /// </summary>
     [SerializeField] private GyroController _gyroController;
+
     /// <summary>
     /// 復帰の配置成功時に生成する演出のPrefab。
     /// </summary>
     [SerializeField] private GameObject _effectPrefab;
-    /// <summary>
-    /// 復帰の配置成功時に鳴らすSEの音源。
-    /// </summary>
-    [SerializeField] private AudioSource _effectSE;
+
     /// <summary>
     /// 生成した演出個体に適用する各軸共通のスケール。
     /// </summary>
     [SerializeField] private float _effectScale = 1f;
+
     /// <summary>
     /// OuterCubeのメッシュが持つローカル座標の境界。
     /// </summary>
     private Bounds _outerCubeBounds;
+
     /// <summary>
     /// 配置後、操作再開を試みるまでの待機時間（秒）。
     /// </summary>
     [SerializeField] private float _respawnWaitTime = 0.5f;
+
     /// <summary>
     /// 今回の配置後に経過した物理更新の時間（秒）。
     /// </summary>
     private float _waitElapsedTime = 0f;
 
-    // リスポーン地点の初期位置を保持する変数
+    /// <summary>
+    /// リスポーン地点の初期位置を保持する変数
+    /// </summary>
     private Vector3 _initialPosition;
 
-    // リスポーン地点の初期回転を保持する変数
+    /// <summary>
+    /// リスポーン地点の初期回転を保持する変数
+    /// </summary>
     private Quaternion _initialRotation;
 
     /// <summary>
@@ -105,14 +112,32 @@ public class Respawn : MonoBehaviour
     /// </summary>
     [SerializeField] private LayerMask _targetLayer;
 
-    private float _scale;
+    /// <summary>
+    /// ボールについているスフィアコライダーのスケール。
+    /// </summary>
+    private float _sphereScale;
+
+    /// <summary>
+    /// リスポーンが完了したときに呼び出されるイベント。引数は復帰後のワールド位置と回転。
+    /// </summary>
+    [SerializeField] private UnityEvent<Vector3, Quaternion> _onRespawnCompleted;
+
+    /// <summary>
+    /// 現在のリスポーンID。
+    /// </summary>
+    private int _respawnId = -1;
+
+    /// <summary>
+    /// 通知済みの最後のリスポーンID。
+    /// </summary>
+    private int _lastNotifiedRespawnId = -1;
 
     /// <summary>
     /// 操作開始前の復帰先と、ボール・場外判定に必要な情報を保存する。
     /// </summary>
     private void Start()
     {
-        _scale = this.transform.lossyScale.x;
+        _sphereScale = this.transform.lossyScale.x;
 
         // 操作前のワールド位置・回転を保存する。
         _initialPosition = _respawnPoint.position;
@@ -177,9 +202,6 @@ public class Respawn : MonoBehaviour
                 this._rigidbody.position = _initialPosition;
                 _waitElapsedTime = 0f;
                 _currentRespawnState = RespawnState.WaitingToResume;
-                GameObject teleportEffect = Instantiate(_effectPrefab, _initialPosition, _initialRotation);
-                teleportEffect.transform.localScale = Vector3.one * _effectScale;
-                _effectSE.Play();
             }
             else
             {
@@ -192,7 +214,7 @@ public class Respawn : MonoBehaviour
     private bool IsPlacementSafe()
     {
         // ボールの中心を基準に、スフィアコライダーの半径で重なりを検出する。
-        Collider[] overlappingColliders = Physics.OverlapSphere(_rigidbody.position, _sphereCollider.radius * _scale, _targetLayer, QueryTriggerInteraction.Ignore);
+        Collider[] overlappingColliders = Physics.OverlapSphere(_rigidbody.position, _sphereCollider.radius * _sphereScale, _targetLayer, QueryTriggerInteraction.Ignore);
         foreach (Collider collider in overlappingColliders)
         {
             if (Physics.ComputePenetration(
@@ -201,13 +223,31 @@ public class Respawn : MonoBehaviour
                 out Vector3 direction, out float distance
             ))
             {
+                Debug.LogWarning($"ボールの配置が安全でない可能性があります。重なりが検出されました。：{collider.name}");
                 // 重なりがある場合は配置が安全でないと判断する。
                 return false;
             }
         }
         float measuredDistance = Vector3.Distance(_rigidbody.position, _initialPosition);
+        if (measuredDistance > _allowingDistance)
+        {
+            Debug.LogWarning($"初期位置とボールの距離が許容範囲を超えています。：{measuredDistance}");
+            // 初期位置からの距離が許容範囲を超えている場合も配置が安全でないと判断する。
+            return false;
+        }
         // ボールの中心が場外判定の範囲内にあるかを確認する。
         Vector3 ballLocalPosition = _outerCubeCollider.transform.InverseTransformPoint(_rigidbody.position);
-        return _outerCubeBounds.Contains(ballLocalPosition) && measuredDistance <= _allowingDistance;
+        if (!_outerCubeBounds.Contains(ballLocalPosition))
+        {
+            Debug.LogWarning($"ボールの中心が場外判定の範囲外にあります。：{ballLocalPosition}");
+            return false;
+        }
+        return true;
+    }
+
+    public void RespawnEffectPlayer(Vector3 position, Quaternion rotation)
+    {
+        GameObject teleportEffect = Instantiate(_effectPrefab, _initialPosition, _initialRotation);
+        teleportEffect.transform.localScale = Vector3.one * _effectScale;
     }
 }
