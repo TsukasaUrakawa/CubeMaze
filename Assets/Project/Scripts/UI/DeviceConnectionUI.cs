@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using static JSL.ControllerType;
 
@@ -8,25 +9,35 @@ using static JSL.ControllerType;
 public class DeviceConnectionUI : MonoBehaviour
 {
     /// <summary>
+    /// 準備中の理由や検索結果を表示する案内文。
+    /// </summary>
+    [SerializeField] private TextMeshProUGUI _messageText;
+
+    /// <summary>
     /// 検出候補ごとに生成する一覧の行。
     /// </summary>
     [SerializeField] private DeviceListItem _deviceListItemPrefab;
+
     /// <summary>
     /// 候補の行を配置するScrollViewのContent。
     /// </summary>
     [SerializeField] private RectTransform _deviceListContent;
+
     /// <summary>
     /// 候補・接続状態の通知元と、選択確定の依頼先。
     /// </summary>
     [SerializeField] private DeviceConnectManager _deviceConnectManager;
+
     /// <summary>
     /// クリックした候補の表示と、確定要求の通知を担当するUI。
     /// </summary>
     [SerializeField] private DeviceDetailUI _deviceDetailUI;
+
     /// <summary>
     /// 測定中に表示するアニメーション。測定の完了判定は接続管理が担当する。
     /// </summary>
     [SerializeField] private Animator _calibrationAnimator;
+
     /// <summary>
     /// 接続パネルの見た目・操作・クリック遮断をまとめて切り替える。
     /// </summary>
@@ -155,5 +166,14 @@ public class DeviceConnectionUI : MonoBehaviour
         _deviceConnectManager.SelectionCandidatesChanged -= OnSelectionCandidatesChanged;
         _deviceDetailUI.DeviceConfirmationRequested -= OnDeviceConfirmationRequested;
         _deviceConnectManager.ConnectionStateChanged -= OnConnectionStateChanged;
+    }
+
+    /// <summary>
+    /// 案内文を設定する。
+    /// </summary>
+    /// <param name="message">設定する案内文</param>
+    public void SetMessage(string message)
+    {
+        _messageText.text = message;
     }
 }

@@ -118,9 +118,9 @@ public class Respawn : MonoBehaviour
     private float _sphereScale;
 
     /// <summary>
-    /// リスポーンが完了したときに呼び出されるイベント。引数は復帰後のワールド位置と回転。
+    /// リスポーン地点に配置れたときに呼び出されるイベント。引数は復帰後のワールド位置と回転。
     /// </summary>
-    [SerializeField] private UnityEvent<Vector3, Quaternion> _onRespawnCompleted;
+    [SerializeField] private UnityEvent<Vector3, Quaternion> _onRespawnPlaced;
 
     /// <summary>
     /// 現在のリスポーンID。
@@ -128,9 +128,9 @@ public class Respawn : MonoBehaviour
     private int _respawnId = -1;
 
     /// <summary>
-    /// 通知済みの最後のリスポーンID。
+    /// 配置通知済みの最後のリスポーンID。配置後に呼び出されるイベントの重複を防ぐために使用する。
     /// </summary>
-    private int _lastNotifiedRespawnId = -1;
+    private int _lastNotifiedPlacedRespawnId = -1;
 
     /// <summary>
     /// 操作開始前の復帰先と、ボール・場外判定に必要な情報を保存する。
@@ -156,9 +156,15 @@ public class Respawn : MonoBehaviour
         if (_currentRespawnState == RespawnState.WaitingToResume)
         {
             _waitElapsedTime += Time.fixedDeltaTime;
-            if (_waitElapsedTime >= _respawnWaitTime)
+            if (IsPlacementSafe())
             {
-                if (IsPlacementSafe())
+                if (_respawnId != _lastNotifiedPlacedRespawnId)
+                {
+                    _lastNotifiedPlacedRespawnId = _respawnId;
+                    _onRespawnPlaced.Invoke(_initialPosition, _initialRotation);
+                }
+
+                if (_waitElapsedTime >= _respawnWaitTime)
                 {
                     if (_gyroController.TryResumeAfterRespawn())
                     {
@@ -166,10 +172,10 @@ public class Respawn : MonoBehaviour
                         _currentRespawnState = RespawnState.Ready;
                     }
                 }
-                else
-                {
-                    _currentRespawnState = RespawnState.RecoveryRequired;
-                }
+            }
+            else
+            {
+                _currentRespawnState = RespawnState.RecoveryRequired;
             }
             return;
         }
@@ -194,6 +200,7 @@ public class Respawn : MonoBehaviour
         {
             // 他の処理を呼ぶ前に受付済みにし、同じ復帰中の追加要求を拒否する。
             _currentRespawnState = RespawnState.Restoring;
+            _respawnId++;
             this._rigidbody.linearVelocity = Vector3.zero;
             this._rigidbody.angularVelocity = Vector3.zero;
             this._rigidbody.isKinematic = true;
@@ -247,7 +254,7 @@ public class Respawn : MonoBehaviour
 
     public void RespawnEffectPlayer(Vector3 position, Quaternion rotation)
     {
-        GameObject teleportEffect = Instantiate(_effectPrefab, _initialPosition, _initialRotation);
+        GameObject teleportEffect = Instantiate(_effectPrefab, position, rotation);
         teleportEffect.transform.localScale = Vector3.one * _effectScale;
     }
 }

@@ -1262,18 +1262,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 1409871548}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 131047347}
         m_TargetAssemblyTypeName: UIButtonAudio, Assembly-CSharp
         m_MethodName: PlayClickSound
@@ -6406,6 +6394,7 @@ GameObject:
   m_Component:
   - component: {fileID: 814212696}
   - component: {fileID: 814212697}
+  - component: {fileID: 814212698}
   m_Layer: 0
   m_Name: DeviceConnectManager
   m_TagString: Untagged
@@ -6440,7 +6429,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c308e11a8bd81e46b62fa70c08149e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _messageText: {fileID: 1409871550}
+--- !u!114 &814212698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 814212695}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 207eb6382bf3a744d976888bf73bef24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _deviceConnectManager: {fileID: 814212697}
+  _deviceConnectionUI: {fileID: 1297257761}
 --- !u!43 &815508230
 Mesh:
   m_ObjectHideFlags: 0
@@ -12275,6 +12277,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef8a0c547b06ff84f8f10f29188e9f9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _messageText: {fileID: 1409871550}
   _deviceListItemPrefab: {fileID: 8321862906147720396, guid: 814f11939c0e24841be5c4b73d7df5da, type: 3}
   _deviceListContent: {fileID: 513690994}
   _deviceConnectManager: {fileID: 814212697}
@@ -19305,12 +19308,38 @@ MonoBehaviour:
   _respawnPoint: {fileID: 1142703017}
   _gyroController: {fileID: 1402133120}
   _effectPrefab: {fileID: 7761031033666763820, guid: 1eb833340b41fb444b576c4dced8d4dc, type: 3}
-  _effectSE: {fileID: 1119943203}
   _effectScale: 2
   _respawnWaitTime: 0.5
   _targetLayer:
     serializedVersion: 2
     m_Bits: 64
+  _onRespawnPlaced:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 2075956031}
+        m_TargetAssemblyTypeName: Respawn, Assembly-CSharp
+        m_MethodName: RespawnEffectPlayer
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1119943203}
+        m_TargetAssemblyTypeName: UnityEngine.AudioSource, UnityEngine
+        m_MethodName: Play
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!43 &2092982952
 Mesh:
   m_ObjectHideFlags: 0

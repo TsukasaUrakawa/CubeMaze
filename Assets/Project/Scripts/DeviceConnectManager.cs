@@ -11,11 +11,6 @@ using static JSL;
 public class DeviceConnectManager : MonoBehaviour
 {
     /// <summary>
-    /// 準備中の理由や検索結果を表示する案内文。
-    /// </summary>
-    [SerializeField] private TextMeshProUGUI _messageText;
-
-    /// <summary>
     /// デバイスの現在の接続状態
     /// </summary>
     public enum ConnectionState
@@ -129,14 +124,12 @@ public class DeviceConnectManager : MonoBehaviour
         switch (_currentConnectionState)
         {
             case ConnectionState.Preparing:
-                ShowPreparingMessage();
                 break;
             case ConnectionState.Searching:
                 SearchDevices();
                 if (_detectedDeviceCount >= 1 && ChangeConnectionState(ConnectionState.Selecting))
                 {
                     SelectionCandidatesChanged?.Invoke(_selectionCandidateHandles); // 現在の選択候補一覧を渡す
-                    _messageText.text = "";
                 }
                 else if (_detectedDeviceCount == 0)
                 {
@@ -265,37 +258,14 @@ public class DeviceConnectManager : MonoBehaviour
             case (ConnectionState.Calibrating, PreparingReason.ActiveDeviceDisconnected):
             case (ConnectionState.InUse, PreparingReason.ActiveDeviceDisconnected):
                 {
+                    _currentPreparingReason = preparingReason;
                     if (ChangeConnectionState(ConnectionState.Preparing))
                     {
-                        _currentPreparingReason = preparingReason;
-                        ShowPreparingMessage();
                         SelectionCandidatesChanged?.Invoke(Array.Empty<int>()); // 選択候補の変化をDeviceConnectionUIに通知
                     }
                     break;
                 }
             default: break;
-        }
-    }
-
-    /// <summary>
-    /// PreparingReasonに対応する文章を表示
-    /// </summary>
-    private void ShowPreparingMessage()
-    {
-        switch (_currentPreparingReason)
-        {
-            case (PreparingReason.InitialStartup):
-                _messageText.text = "使用するデバイスを接続してください";
-                break;
-            case (PreparingReason.FoundNoDevices):
-                _messageText.text = "デバイスが見つかりませんでした";
-                break;
-            case (PreparingReason.AllSelectionCandidatesDisconnected):
-                _messageText.text = "選択リストのデバイスが全て切断されました";
-                break;
-            case (PreparingReason.ActiveDeviceDisconnected):
-                _messageText.text = "選択したデバイスが切断されました";
-                break;
         }
     }
 
